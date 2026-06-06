@@ -1,0 +1,8 @@
+{
+  "name": "panda-builder",
+  "description": "当需要在 panda-trading 项目中创建或验收一个新的 BUILD skill 时，使用此 skill。确保目录结构、代码接口、文档格式符合 BUILD 开发与生产规则。",
+  "version": "1.0.0",
+  "tags": ["quant", "build", "scaffold", "development"],
+  "trigger": "每次创建新 BUILD skill 或对现有 BUILD 做验收检查时",
+  "skill_file": "SKILL.md"
+}
