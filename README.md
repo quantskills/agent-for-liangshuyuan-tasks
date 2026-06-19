@@ -301,6 +301,102 @@ python3 src/build/build-{编号}-{名称}/开发产物/scripts/test.py
 
 ---
 
+## 🤖 外部 AI 使用指南
+
+> 如果你是外部 AI（如 Claude Code、Copilot、Cursor 等），以下是你进入本项目后应该执行的标准流程。
+
+### 第一步：Skill 发现
+
+遍历 `src/build/` 和 `src/alpha/` 目录，每个匹配 `build-{编号}-{名称}/` 或 `alpha-{编号}-{名称}/` 的子目录就是一个 Skill：
+
+```bash
+# 列出所有已实现的 BUILD skill
+ls -d src/build/build-*/开发产物/
+
+# 列出所有已实现的 Alpha skill
+ls -d src/alpha/alpha-*/
+```
+
+### 第二步：读取 SKILL.md —— 理解 Skill 能力
+
+每个 Skill 的 `开发产物/SKILL.md` 是其「原子行为说明书」，必须首先阅读。SKILL.md 的 frontmatter 和正文会明确告诉你：
+
+| 你需要知道的信息 | SKILL.md 中的对应字段 |
+|---|---|
+| 这个 Skill 解决什么问题 | `description`（frontmatter）+ `## 工具定位` |
+| 什么时候用它 | `## 适用场景` |
+| 输入需要哪些字段 | `## 输入` 表格 |
+| 输出会有什么字段 | `## 输出` 表格 |
+| 怎么调用它 | `## 调用方式`（含 Python import 示例） |
+| 能否被 Alpha 调用 | `## 可被 Alpha 调用` |
+| 是否需要读 Parquet | `## 是否需要生产结果` |
+
+### 第三步：校验 Skill 是否可用
+
+对每个 Skill 执行以下校验：
+
+```bash
+BUILD_DIR="src/build/build-B12/开发产物"   # 替换为你要检查的 Skill
+
+# 1. 结构完整性检查
+echo "=== 必选文件检查 ==="
+for f in SKILL.md scripts/build.py scripts/test.py references/api_guide.md; do
+  [ -f "$BUILD_DIR/$f" ] && echo "✅ $f" || echo "❌ 缺失 $f"
+done
+
+# 2. 代码入口检查 —— build.py 必须实现 run() + validate_input()
+echo ""
+echo "=== 入口函数检查 ==="
+grep -q "def run(" "$BUILD_DIR/scripts/build.py" && echo "✅ run()" || echo "❌ 缺失 run()"
+grep -q "def validate_input(" "$BUILD_DIR/scripts/build.py" && echo "✅ validate_input()" || echo "❌ 缺失 validate_input()"
+
+# 3. 运行自测
+echo ""
+echo "=== 自测结果 ==="
+python3 "$BUILD_DIR/scripts/build.py" && echo "✅ build.py 可独立运行" || echo "❌ build.py 运行失败"
+python3 "$BUILD_DIR/scripts/test.py" && echo "✅ test.py 通过" || echo "❌ test.py 未通过"
+```
+
+### 第四步：调用 Skill
+
+所有 BUILD skill 遵循统一调用协议。对于**调用型** BUILD（如 B12），直接 import：
+
+```python
+import sys
+sys.path.insert(0, "src/build/build-B12/开发产物/scripts")
+from build import run
+
+# 单条输入（dict）→ 单条输出（dict）
+order = run({
+    "code": "600036", "pnl_pct": 0.015,
+    "sellable_qty": 800, "locked_qty": 0,
+    "price": 10.0, "available_cash": 100000, "time": "10:00",
+})
+
+# 批量输入（list）→ 批量输出（list）
+orders = run([pos1, pos2, pos3])
+```
+
+对于**结果型** BUILD，直接读取 `生产产物/数据库.parquet`，不要重复拉数重算。
+
+### 第五步：理解 Skill 的生产形态
+
+| 形态 | 识别方式 | 正确做法 |
+|---|---|---|
+| **调用型** | SKILL.md 写"是否需要生产结果：否" | `import build; build.run(data)` |
+| **结果型** | 存在 `生产产物/数据库.parquet` | 直接读 Parquet，不重算 |
+| **混合型** | 两者皆有 | 优先读 Parquet，按需调用 build.py |
+
+### 常见错误（AI 应避免）
+
+- ❌ 自己凭空判断仓位，而不是调用 B12 仓位管理 Skill
+- ❌ 对结果型 BUILD 重新拉取原始行情 + 重算因子
+- ❌ 忽略 SKILL.md 中标注的调用限制（如 B12 仅多头）
+- ❌ 不看 `references/api_guide.md` 就猜输入输出格式
+- ❌ 跳过 `validate_input()` 直接传入脏数据
+
+---
+
 ## 📚 参考资料
 
 - [BUILD 开发与生产规则 V2](./docs/BUILD开发与生产规则V2.md)

@@ -295,6 +295,104 @@ python3 src/build/build-{id}-{name}/开发产物/scripts/test.py
 
 ---
 
+---
+
+## 🤖 External AI Guide
+
+> If you are an external AI (e.g., Claude Code, Copilot, Cursor, etc.), follow this standard protocol upon entering this repository.
+
+### Step 1: Skill Discovery
+
+Traverse `src/build/` and `src/alpha/` directories — each subdirectory matching `build-{id}-{name}/` or `alpha-{id}-{name}/` is a Skill:
+
+```bash
+# List all implemented BUILD skills
+ls -d src/build/build-*/开发产物/
+
+# List all implemented Alpha skills
+ls -d src/alpha/alpha-*/
+```
+
+### Step 2: Read SKILL.md — Understand the Skill
+
+Each Skill's `开发产物/SKILL.md` is its atomic specification document. Always read it first. The frontmatter and body tell you:
+
+| What you need to know | Where to find it in SKILL.md |
+|---|---|
+| What problem this Skill solves | `description` (frontmatter) + `## 工具定位` |
+| When to use it | `## 适用场景` |
+| Required input fields | `## 输入` table |
+| Output fields | `## 输出` table |
+| How to invoke it | `## 调用方式` (includes Python import example) |
+| Whether Alpha can call it | `## 可被 Alpha 调用` |
+| Whether it produces Parquet results | `## 是否需要生产结果` |
+
+### Step 3: Validate the Skill
+
+Run these checks on each Skill:
+
+```bash
+BUILD_DIR="src/build/build-B12/开发产物"   # Replace with the Skill you're checking
+
+# 1. Structural integrity
+echo "=== Required files ==="
+for f in SKILL.md scripts/build.py scripts/test.py references/api_guide.md; do
+  [ -f "$BUILD_DIR/$f" ] && echo "✅ $f" || echo "❌ Missing $f"
+done
+
+# 2. Code entry points — build.py must implement run() + validate_input()
+echo ""
+echo "=== Entry functions ==="
+grep -q "def run(" "$BUILD_DIR/scripts/build.py" && echo "✅ run()" || echo "❌ Missing run()"
+grep -q "def validate_input(" "$BUILD_DIR/scripts/build.py" && echo "✅ validate_input()" || echo "❌ Missing validate_input()"
+
+# 3. Self-test
+echo ""
+echo "=== Self-test ==="
+python3 "$BUILD_DIR/scripts/build.py" && echo "✅ build.py runs independently" || echo "❌ build.py failed"
+python3 "$BUILD_DIR/scripts/test.py" && echo "✅ test.py passed" || echo "❌ test.py failed"
+```
+
+### Step 4: Invoke the Skill
+
+All BUILD skills follow a unified calling convention. For **callable** BUILD skills (e.g., B12), import directly:
+
+```python
+import sys
+sys.path.insert(0, "src/build/build-B12/开发产物/scripts")
+from build import run
+
+# Single input (dict) → single output (dict)
+order = run({
+    "code": "600036", "pnl_pct": 0.015,
+    "sellable_qty": 800, "locked_qty": 0,
+    "price": 10.0, "available_cash": 100000, "time": "10:00",
+})
+
+# Batch input (list) → batch output (list)
+orders = run([pos1, pos2, pos3])
+```
+
+For **result-type** BUILD skills, read `生产产物/数据库.parquet` directly — do NOT re-pull raw data and re-compute.
+
+### Step 5: Determine Production Type
+
+| Type | How to identify | Correct action |
+|---|---|---|
+| **Callable** | SKILL.md states "是否需要生产结果：否" | `import build; build.run(data)` |
+| **Result-type** | `生产产物/数据库.parquet` exists | Read Parquet directly, do not recompute |
+| **Hybrid** | Both exist | Prefer reading Parquet; call build.py when needed |
+
+### Common Mistakes (AI should avoid)
+
+- ❌ Making position decisions ad-hoc instead of calling the B12 position manager Skill
+- ❌ Re-pulling raw market data and re-computing factors for result-type BUILD skills
+- ❌ Ignoring documented limitations in SKILL.md (e.g., B12 is long-only)
+- ❌ Guessing input/output formats without reading `references/api_guide.md`
+- ❌ Skipping `validate_input()` and passing dirty data directly
+
+---
+
 ## 📄 License
 
 This project is open-sourced under the [MIT License](./LICENSE). Copyright (c) 2026 Maduan.
