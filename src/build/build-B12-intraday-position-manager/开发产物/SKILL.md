@@ -1,5 +1,5 @@
 ---
-name: build-B12
+name: build-B12-intraday-position-manager
 description: 当需要对日内多品种持仓做动态仓位管理时，使用此 skill。支持 A股/A股ETF/股指期货/商品期货/港股+ETF；区分 T+1/T+0、昨仓/今仓、保证金/现金，输出标准 8 字段调仓指令。
 tags: [quant, build, development, 仓位管理, 多品种]
 ---
