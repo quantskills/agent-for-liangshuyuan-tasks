@@ -22,7 +22,7 @@ tags: [quant, build, scaffold, development]
 每个 BUILD 目录命名为 `build-{编号}-{名称}/`，放在项目根目录，例如：
 
 ```
-build-B12-日内仓位动态管理/
+build-B12-intraday-position-manager/
 ├── 开发产物/
 │   ├── SKILL.md
 │   ├── scripts/

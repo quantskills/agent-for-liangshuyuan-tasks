@@ -154,7 +154,7 @@ panda-trading/
 │
 └── src/                            ← 开发产物（所有产出必须放此处）
     ├── build/                      ←   BUILD 工具
-    │   └── build-B12/              ←     B12 日内仓位动态管理
+    │   └── build-B12-intraday-position-manager/              ←     B12 日内仓位动态管理
     │       └── 开发产物/
     │           ├── SKILL.md
     │           ├── scripts/
@@ -187,17 +187,17 @@ panda-trading/
 
 ```bash
 # 直接运行（含内置示例）
-python3 src/build/build-B12/开发产物/scripts/build.py
+python3 src/build/build-B12-intraday-position-manager/开发产物/scripts/build.py
 
 # 运行测试
-python3 src/build/build-B12/开发产物/scripts/test.py
+python3 src/build/build-B12-intraday-position-manager/开发产物/scripts/test.py
 ```
 
 ### 作为模块调用
 
 ```python
 import sys
-sys.path.insert(0, "src/build/build-B12/开发产物/scripts")
+sys.path.insert(0, "src/build/build-B12-intraday-position-manager/开发产物/scripts")
 from build import run
 
 # 单条
@@ -336,7 +336,7 @@ ls -d src/alpha/alpha-*/
 对每个 Skill 执行以下校验：
 
 ```bash
-BUILD_DIR="src/build/build-B12/开发产物"   # 替换为你要检查的 Skill
+BUILD_DIR="src/build/build-B12-intraday-position-manager/开发产物"   # 替换为你要检查的 Skill
 
 # 1. 结构完整性检查
 echo "=== 必选文件检查 ==="
@@ -363,7 +363,7 @@ python3 "$BUILD_DIR/scripts/test.py" && echo "✅ test.py 通过" || echo "❌ t
 
 ```python
 import sys
-sys.path.insert(0, "src/build/build-B12/开发产物/scripts")
+sys.path.insert(0, "src/build/build-B12-intraday-position-manager/开发产物/scripts")
 from build import run
 
 # 单条输入（dict）→ 单条输出（dict）
@@ -403,4 +403,4 @@ orders = run([pos1, pos2, pos3])
 - [Alpha 因子开发与生产规则 V2](./docs/Alpha因子开发与生产规则V2.md)
 - [多 Agent 协作任务规范](./agents/TASK_REQUIREMENTS.md)
 - [panda-builder Skill 规范](./skills/panda-builder/SKILL.md)
-- [B12 API 接口文档](./src/build/build-B12/开发产物/references/api_guide.md)
+- [B12 API 接口文档](./src/build/build-B12-intraday-position-manager/开发产物/references/api_guide.md)

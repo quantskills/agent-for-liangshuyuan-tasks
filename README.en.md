@@ -154,7 +154,7 @@ panda-trading/
 │
 └── src/                            ← Development artifacts (all outputs go here)
     ├── build/                      ←   BUILD tools
-    │   └── build-B12/              ←     B12 Intraday Position Manager
+    │   └── build-B12-intraday-position-manager/              ←     B12 Intraday Position Manager
     │       └── 开发产物/            ←       (development artifacts)
     │           ├── SKILL.md
     │           ├── scripts/
@@ -187,17 +187,17 @@ panda-trading/
 
 ```bash
 # Direct run (includes built-in examples)
-python3 src/build/build-B12/开发产物/scripts/build.py
+python3 src/build/build-B12-intraday-position-manager/开发产物/scripts/build.py
 
 # Run tests
-python3 src/build/build-B12/开发产物/scripts/test.py
+python3 src/build/build-B12-intraday-position-manager/开发产物/scripts/test.py
 ```
 
 ### Use as a Module
 
 ```python
 import sys
-sys.path.insert(0, "src/build/build-B12/开发产物/scripts")
+sys.path.insert(0, "src/build/build-B12-intraday-position-manager/开发产物/scripts")
 from build import run
 
 # Single position
@@ -332,7 +332,7 @@ Each Skill's `开发产物/SKILL.md` is its atomic specification document. Alway
 Run these checks on each Skill:
 
 ```bash
-BUILD_DIR="src/build/build-B12/开发产物"   # Replace with the Skill you're checking
+BUILD_DIR="src/build/build-B12-intraday-position-manager/开发产物"   # Replace with the Skill you're checking
 
 # 1. Structural integrity
 echo "=== Required files ==="
@@ -359,7 +359,7 @@ All BUILD skills follow a unified calling convention. For **callable** BUILD ski
 
 ```python
 import sys
-sys.path.insert(0, "src/build/build-B12/开发产物/scripts")
+sys.path.insert(0, "src/build/build-B12-intraday-position-manager/开发产物/scripts")
 from build import run
 
 # Single input (dict) → single output (dict)
@@ -405,4 +405,4 @@ This project is open-sourced under the [MIT License](./LICENSE). Copyright (c) 2
 - [Alpha Factor Development & Production Rules V2](./docs/Alpha因子开发与生产规则V2.md) (Chinese)
 - [Multi-Agent Collaboration Spec](./agents/TASK_REQUIREMENTS.md) (Chinese)
 - [panda-builder Skill Spec](./skills/panda-builder/SKILL.md) (Chinese)
-- [B12 API Documentation](./src/build/build-B12/开发产物/references/api_guide.md) (Chinese)
+- [B12 API Documentation](./src/build/build-B12-intraday-position-manager/开发产物/references/api_guide.md) (Chinese)

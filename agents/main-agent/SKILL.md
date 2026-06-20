@@ -9,7 +9,7 @@ tags: [orchestrator, scheduler, panda-trading]
 ## 角色定位
 
 - **类型**：编排型 Agent（Orchestrator）
-- **职责**：接收用户任务指令，协调需求分析、开发、测试三类子 Agent，确保每个任务按规范流程完成
+- **职责**：接收用户任务指令，协调需求分析、开发、测试、发布四类子 Agent，确保每个任务按规范流程完成交付与归档
 - **权限**：可读写所有目录，可派发所有子 Agent
 
 ---
@@ -82,6 +82,41 @@ done
 └── 备注：{notes}
 ```
 
+### Step 5 — 派发发布任务（可选，默认执行）
+
+任务测试通过后，向 **发布 Agent**（`agents/publish-agent/SKILL.md`）传入发布所需信息，自动生成社区笔记并归档推送。
+
+**输入**：将以下结构化信息传给发布 Agent：
+
+```python
+{
+    "task_id": TaskSpec.task_id,           # 如 "B12"
+    "task_type": TaskSpec.task_type,       # "build" | "alpha"
+    "task_name": TaskSpec.task_name,       # 如 "日内仓位动态管理"
+    "job_file": TaskSpec.job_file,         # 如 "B12 日内仓位动态管理.txt"
+    "src_path": TaskSpec.target_dir.rstrip("开发产物/"),  # 任务根目录；BUILD 的 target_dir 为 .../开发产物/，去掉即得根目录；Alpha 的 target_dir 本身即根目录
+    "artifacts": DevReport.artifacts,      # 产出物路径列表
+    "test_result": {                       # TestReport 摘要
+        "passed": TestReport.passed,
+        "total_cases": TestReport.total_cases,
+        "pass_count": TestReport.pass_count,
+        "fail_count": TestReport.fail_count
+    },
+    "summary": TaskSpec.summary,           # 一句话描述
+    "logic": TaskSpec.logic,               # 核心逻辑描述
+    "notes": DevReport.notes               # 开发者备注
+}
+```
+
+**验收**：检查发布 Agent 返回的 `published` 字段：
+- `published == True` → 发布成功，向用户补充发布产物路径
+- `published == False` → 向用户报告发布失败原因（不影响任务本身已完成的状态）
+
+**跳过条件**：
+- 用户明确说"不要发布"或"跳过发布"
+- TestReport.passed == False（测试未通过，不发布）
+- 非 master/main 分支上的实验性任务（用户指定跳过）
+
 ---
 
 ## 多任务并行规则
@@ -101,3 +136,5 @@ done
 | 测试 Agent 循环 3 次仍有 high bug | 停止，输出 Bug 清单给用户 |
 | 开发产物路径不存在 | 要求开发 Agent 重新生成 |
 | Python 运行异常（非业务异常） | 检查依赖，报告环境问题 |
+| 发布 Agent 返回 published=False | 向用户报告错误原因，任务本身仍标记完成 |
+| Git push 被拒绝 | 通知用户手动处理，发布笔记已本地生成 |
