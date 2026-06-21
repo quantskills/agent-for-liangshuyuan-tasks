@@ -3,3 +3,7 @@ __pycache__/
 
 .idea
 .claude/settings.local.json
+.gitmodules
+
+public/skills/*
+public/community/*

@@ -10,7 +10,7 @@ B12 v2 测试脚本
   6. 优先级冲突（14:45 + 浮亏 -1.2% → 强平优先于全平）
   7. 不足一手 → hold
 
-运行：python3 src/build/build-B12-intraday-position-manager/开发产物/scripts/test.py
+运行：python3 src/build/build-b12-intraday-position-manager/开发产物/scripts/test.py
 """
 import os
 import sys
