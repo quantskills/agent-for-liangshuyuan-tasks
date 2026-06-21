@@ -234,6 +234,9 @@ orders = run([...])   # 传入 list 即可
 
 ```
 build-{编号}-{名称}/
+├── README.md                      ← 交付说明（必填）
+├── INSTALL_CLAUDE_CODE.md         ← 安装指南（必填）
+├── requirements.txt               ← Python 依赖声明（必填）
 ├── 开发产物/
 │   ├── SKILL.md                   ← 功能说明书（必填）
 │   ├── scripts/
@@ -291,6 +294,7 @@ build-{编号}-{名称}/
 ```bash
 # 1. 创建目录结构
 mkdir -p src/build/build-{编号}-{名称}/开发产物/{scripts,references}
+touch src/build/build-{编号}-{名称}/{README.md,INSTALL_CLAUDE_CODE.md,requirements.txt}
 
 # 2. 编写 build.py（必须实现 run() 和 validate_input()）
 # 3. 编写 test.py（覆盖正常/异常/边界）
