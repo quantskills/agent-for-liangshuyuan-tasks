@@ -91,10 +91,11 @@ done
 ```python
 {
     "task_id": TaskSpec.task_id,           # 如 "B12"
+    "task_id_lower": TaskSpec.task_id.lower(),  # 如 "b12"，用于 repo/目录命名
     "task_type": TaskSpec.task_type,       # "build" | "alpha"
     "task_name": TaskSpec.task_name,       # 如 "日内仓位动态管理"
     "job_file": TaskSpec.job_file,         # 如 "B12 日内仓位动态管理.txt"
-    "src_path": TaskSpec.target_dir.rstrip("开发产物/"),  # 任务根目录；BUILD 的 target_dir 为 .../开发产物/，去掉即得根目录；Alpha 的 target_dir 本身即根目录
+    "src_path": TaskSpec.target_dir,       # 如 "src/build/build-B12-.../开发产物/"；publish-agent 会复制到同名子目录
     "artifacts": DevReport.artifacts,      # 产出物路径列表
     "test_result": {                       # TestReport 摘要
         "passed": TestReport.passed,
@@ -102,6 +103,7 @@ done
         "pass_count": TestReport.pass_count,
         "fail_count": TestReport.fail_count
     },
+    "production_type": TaskSpec.production_type,  # "调用型" | "结果型" | "混合型"
     "summary": TaskSpec.summary,           # 一句话描述
     "logic": TaskSpec.logic,               # 核心逻辑描述
     "notes": DevReport.notes               # 开发者备注

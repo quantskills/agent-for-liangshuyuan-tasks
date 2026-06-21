@@ -1,6 +1,3 @@
-[submodule "public/skills/skill-B12-intraday-position-manager"]
-	path = public/skills/skill-B12-intraday-position-manager
-	url = git@github.com:quantskills/skill-B12-intraday-position-manager.git
 [submodule "public/skills/build-b12-intraday-position-manager"]
 	path = public/skills/build-b12-intraday-position-manager
 	url = git@github.com:quantskills/build-b12-intraday-position-manager.git
