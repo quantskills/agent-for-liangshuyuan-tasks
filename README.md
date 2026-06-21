@@ -40,85 +40,96 @@ skills/
 | **B** | BUILD 工具 | `src/build/` | 数据处理、仓位管理、监控预警、复盘分析等 |
 | **A** | Alpha 因子 | `src/alpha/` | 股票/期货 Alpha 信号与因子 |
 
-### 多 Agent 协作
+### 多 Agent 协作 —— 从任务到发布全自动
+
+把任务需求写成 `.txt` 放入 `jobs/` 目录，Agent 系统会自动完成**分析 → 路由 → 开发 → 测试 → 发布**全流程。文件名前缀决定路由规则：
+
+| 前缀示例 | 类型 | 路由至 | 产出目录 |
+|---|---|---|---|
+| `B12 日内仓位...txt` | BUILD 工具 | Build 开发 Agent + panda-builder | `src/build/build-B12-.../` |
+| `A3 连板龙头...txt` | Alpha 因子 | Alpha 开发 Agent | `src/alpha/alpha-A3-.../` |
 
 ```
-用户下达任务
+jobs/B12 日内仓位动态管理.txt          ← 你只需要写这个
      │
      ▼
-┌─────────────┐      ┌──────────────────┐
-│  主 Agent   │─────→│  需求分析 Agent   │  读取 jobs/*.txt，输出结构化 TaskSpec
-└──────┬──────┘      └──────────────────┘
-       │ ←── TaskSpec（含歧义标记）
-       │
-       ├── B 类任务 → Build 开发 Agent + panda-builder skill
-       ├── A 类任务 → Alpha 开发 Agent
-       │
-       │ ←── DevReport（产出物路径 + 自检报告）
+┌──────────────────┐
+│  需求分析 Agent   │  读取任务文件 → 识别 B/A 类型 → 输出结构化 TaskSpec
+└──────┬───────────┘
+       │ TaskSpec（含歧义项则先向人类澄清）
        ▼
 ┌─────────────┐
-│  测试 Agent  │  生成测试用例 → 运行 → 输出 TestReport
-└──────┬──────┘
-       │ ←── 通过 ✓ / 失败（Bug 回流，最多迭代 3 轮）
+│  主 Agent   │──── B 类 → Build 开发 Agent + panda-builder
+└──────┬──────┘──── A 类 → Alpha 开发 Agent
+       │
+       │ ←── DevReport（产物路径 + 自检报告）
        ▼
-   任务完成
+┌─────────────┐
+│  测试 Agent  │  生成用例 → 运行 → TestReport
+└──────┬──────┘
+       │ ←── 通过 ✓ / 失败（Bug 回流，最多 3 轮）
+       ▼
+┌─────────────┐
+│  发布 Agent  │  生成社区笔记 → 创建 GitHub 仓库 → Git Submodule 归档 → 推送
+└──────┬──────┘
+       │
+       ▼
+   ✅ 任务完成 + 已发布
 ```
 
-| Agent | 职责 | 代码权限 |
+| Agent | 一句话职责 |
+|---|---|
+| **需求分析** | 读 `jobs/*.txt`，输出结构化 TaskSpec，标记歧义 |
+| **Build/Alpha 开发** | 按 TaskSpec 编码，输出可运行的 Python Skill |
+| **测试** | 生成测试用例，验证输入输出，报告 Bug |
+| **发布** | 生成技术笔记，归档至 `public/skills/`，发布到 GitHub |
+
+### 发布 Agent 做了什么
+
+当任务测试通过后，发布 Agent 自动将开发产物发布为 GitHub 上 `quantskills` 组织下的独立技能仓库：
+
+| 步骤 | 产物 | 位置 |
 |---|---|---|
-| **主 Agent** (`agents/main-agent/`) | 调度编排，串联所有子 Agent | 写入权限 |
-| **需求分析 Agent** (`agents/analyst-agent/`) | 读取 `jobs/*.txt`，输出 TaskSpec | 只读 |
-| **Build 开发 Agent** (`agents/dev-build-agent/`) | 开发 B 类任务，使用 panda-builder | 写入 `src/build/` |
-| **Alpha 开发 Agent** (`agents/dev-alpha-agent/`) | 开发 A 类任务，实现 Alpha 因子 | 写入 `src/alpha/` |
-| **测试 Agent** (`agents/test-agent/`) | 生成测试用例与测试报告 | 只读运行 |
+| 生成技术笔记 | 约 500 字中文文档 | `public/community/{task_id}-{short_name}.md` |
+| 创建 GitHub 仓库 | 独立 skill repo | `github.com/quantskills/{type}-{id}-{slug}` |
+| Git Submodule 归档 | 主仓库追踪技能版本 | `public/skills/{type}-{id}-{slug}/` |
+| 推送主仓库 | 笔记 + submodule 引用 | gitee + github |
+
+**发布的技能目录结构**（`skills_demo` 规范）：
+
+```
+{type}-{id}-{slug}/                    ← GitHub 仓库根
+├── README.md                          ← 完整交付文档（目录树/快速开始/设计要点/验收/局限）
+├── INSTALL_CLAUDE_CODE.md             ← 安装到 Claude Code 的说明
+├── requirements.txt                   ← Python 依赖声明
+├── {type}-{id}-{slug}/                ← 开发产物（必选）
+│   ├── SKILL.md
+│   ├── scripts/   (build.py + test.py + ...)
+│   └── references/ (api_guide.md + ...)
+└── {type}-{id}-{slug}-production/     ← 生产产物（结果型/混合型才有）
+    ├── SKILL.md
+    └── database.parquet
+```
+
+安装到 Claude Code 后可直接调用：`/{type}-{id}-{slug}`
+
+**环境要求**：`.mpc.json` 配置 GitHub MCP + `GITHUB_TOKEN` 环境变量
 
 ---
 
 ## 📦 已实现模块
 
-### B12 — 多品种日内仓位动态管理 v2
+| 编号 | 名称 | 简介 | 详情 |
+|---|---|---|---|
+| B12 | 日内仓位动态管理 v2 | 多品种持仓动态调仓（A股/ETF/期货/港股），T+1/T+0，资金校验 | `src/build/build-B12-intraday-position-manager/开发产物/SKILL.md` |
+| — | 发布至 GitHub | 独立仓库 + 社区笔记 | `quantskills/build-b12-intraday-position-manager` |
 
-**适用品种**：A股 / A股ETF / 股指期货 / 商品期货 / 港股+ETF
+### 待开发
 
-**决策规则**（优先级从高到低）：
-
-| 优先级 | 条件 | 动作 |
+| 编号 | 任务 | 需求 |
 |---|---|---|
-| 1 | 时间 ≥ 品种强平时间 | 强平（按可卖数量） |
-| 2 | 浮亏 ≥ 1% | 全平止损 |
-| 3 | 浮亏 ≥ 0.5% | 砍半仓 |
-| 4 | 浮盈 > 1% | 加仓 50%（校验资金） |
-| 5 | 其他 | hold |
-
-**特性**：
-
-- ✅ T+1 / T+0 品种区分（A股/ETF 锁仓阻断卖出）
-- ✅ 昨仓/今仓分离（sellable_qty / locked_qty）
-- ✅ 保证金/现金独立校验，资金不足自动阻断
-- ✅ 合约乘数中央表驱动（contract_specs.json）
-- ✅ 港股独立 lot_size 覆盖表
-- ✅ 标准化 8 字段调仓指令 + reason 结构化前缀
-
-```python
-# 调用示例
-from scripts.build import run
-
-results = run([
-    {"code": "600036", "pnl_pct":  0.015, "sellable_qty":  800, "locked_qty":   0,
-     "price": 10.0,    "available_cash": 100000, "time": "10:00"},
-    {"code": "IF2406", "pnl_pct":  0.015, "sellable_qty":    2, "locked_qty":   0,
-     "price": 4000.0,  "available_cash": 200000, "time": "10:00"},
-    {"code":  "00700", "pnl_pct": -0.007, "sellable_qty":  200, "locked_qty":   0,
-     "price": 400.0,   "available_cash":      0, "time": "10:00"},
-])
-```
-
-### 待开发任务
-
-| 编号 | 任务 | 状态 |
-|---|---|---|
-| B5 | 早盘竞价扫描 | 📋 需求已录入 |
-| B12 | 日内仓位动态管理 v3（空头/双向/套利） | 🔜 规划中 |
+| B5 | 早盘竞价扫描 | `jobs/B5 早盘竞价扫描.txt` |
+| B12 v3 | 日内仓位动态管理（空头/双向/套利） | — |
 
 ---
 
@@ -387,6 +398,22 @@ orders = run([pos1, pos2, pos3])
 | **结果型** | 存在 `生产产物/数据库.parquet` | 直接读 Parquet，不重算 |
 | **混合型** | 两者皆有 | 优先读 Parquet，按需调用 build.py |
 
+### 第六步：发布 Skill 到 GitHub
+
+开发完成并测试通过后，可将 Skill 发布为 `quantskills` 组织下的独立仓库，同时以 Git Submodule 形式归档到本仓库的 `public/skills/`：
+
+```bash
+# 发布（需要 GitHub MCP + GITHUB_TOKEN）
+# 直接告诉 Claude："发布 B12"
+```
+
+发布的 Skill 可安装到任意 Claude Code 环境：
+
+```bash
+cp -r public/skills/build-b12-intraday-position-manager ~/.claude/skills/
+# 然后在 Claude Code 中调用：/build-b12-intraday-position-manager
+```
+
 ### 常见错误（AI 应避免）
 
 - ❌ 自己凭空判断仓位，而不是调用 B12 仓位管理 Skill
@@ -402,5 +429,5 @@ orders = run([pos1, pos2, pos3])
 - [BUILD 开发与生产规则 V2](./docs/BUILD开发与生产规则V2.md)
 - [Alpha 因子开发与生产规则 V2](./docs/Alpha因子开发与生产规则V2.md)
 - [多 Agent 协作任务规范](./agents/TASK_REQUIREMENTS.md)
+- [发布 Agent 规范](./agents/publish-agent/SKILL.md)
 - [panda-builder Skill 规范](./skills/panda-builder/SKILL.md)
-- [B12 API 接口文档](./src/build/build-B12-intraday-position-manager/开发产物/references/api_guide.md)
