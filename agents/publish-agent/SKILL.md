@@ -149,10 +149,10 @@ public/community/{task_id}-{short_name}.en.md   ← 英文版
 
 #### 整体策略
 
-- 社区笔记（`public/community/*.md` + `*.en.md`）→ 直接提交到主仓库
+- 社区笔记（`public/community/*.md` + `*.en.md`）→ 直接提交到主仓库（`git add -f` 覆盖 `.gitignore`）
 - 归档技能（`public/skills/skill-*`）→ 独立 GitHub 仓库，主仓库通过 **Git Submodule 机制**引用
 
-> **重要**：`public/skills/` 下的子仓库**不预存在**本仓库历史记录中。本仓库 `.gitignore` 包含 `public/skills/*` 规则，确保子仓库内容不进入本仓库版本控制。发布时由 `git submodule add` 动态创建引用（自动生成 `.gitmodules` 条目 + gitlink），其他开发者克隆本仓库后执行 `git submodule update --init --recursive` 即可获取技能子仓库。
+> **重要**：`public/community/` 和 `public/skills/` 目录均被 `.gitignore` 忽略（`public/community/*` 和 `public/skills/*`），发布生产的文件不预存在仓库历史中。发布时通过 `git add -f` 显式添加。
 
 #### 3A — 创建 GitHub 远程仓库
 
@@ -307,11 +307,11 @@ cd /Users/sina/workspace/panda-trading
 
 ```bash
 # 添加中英双语社区笔记
-git add public/community/{task_id}-{short_name}.md
-git add public/community/{task_id}-{short_name}.en.md
+git add -f public/community/{task_id}-{short_name}.md
+git add -f public/community/{task_id}-{short_name}.en.md
 
 # 添加 submodule 配置和引用
-git add .gitmodules public/skills/skill-{task_id_lower}-{short_name}
+git add -f .gitmodules public/skills/skill-{task_id_lower}-{short_name}
 
 # 提交
 git commit -m "docs: publish community note for {task_id} - {task_name}
