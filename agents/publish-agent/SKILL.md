@@ -150,7 +150,9 @@ public/community/{task_id}-{short_name}.en.md   ← 英文版
 #### 整体策略
 
 - 社区笔记（`public/community/*.md` + `*.en.md`）→ 直接提交到主仓库
-- 归档技能（`public/skills/skill-*`）→ 独立 GitHub 仓库，主仓库通过 Git Submodule 引用
+- 归档技能（`public/skills/skill-*`）→ 独立 GitHub 仓库，主仓库通过 **Git Submodule 机制**引用
+
+> **重要**：`public/skills/` 下的子仓库**不预存在**本仓库历史记录中。本仓库 `.gitignore` 包含 `public/skills/*` 规则，确保子仓库内容不进入本仓库版本控制。发布时由 `git submodule add` 动态创建引用（自动生成 `.gitmodules` 条目 + gitlink），其他开发者克隆本仓库后执行 `git submodule update --init --recursive` 即可获取技能子仓库。
 
 #### 3A — 创建 GitHub 远程仓库
 
@@ -176,11 +178,18 @@ public/community/{task_id}-{short_name}.en.md   ← 英文版
 
 GitHub 仓库创建完成后：
 
-**① 添加 submodule**：
+**① 添加 submodule**（通过 `git submodule add` 机制动态创建引用）：
+
+`git submodule add` 会自动完成以下操作：
+- 克隆远程仓库到 `public/skills/skill-{task_id_lower}-{short_name}/`
+- 在 `.gitmodules` 中写入 submodule 配置（path + url）
+- 将 submodule 目录以 gitlink（mode 160000）添加到本仓库索引
 
 ```bash
 git submodule add git@github.com:quantskills/skill-{task_id_lower}-{short_name}.git public/skills/skill-{task_id_lower}-{short_name}
 ```
+
+> `.gitmodules` 由 `git submodule add` 自动创建或更新，**无需手动编写**。本仓库 `.gitignore` 中 `public/skills/*` 规则仅用于防止普通文件误提交，不影响 submodule 机制。
 
 **② 构建目录结构**（repo 根目录即为 Skill 根，**不嵌套**）：
 
