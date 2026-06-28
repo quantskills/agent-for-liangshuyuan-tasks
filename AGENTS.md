@@ -22,7 +22,7 @@ metadata:
 
 ## 维护者
 
-- 码段（xuyong3）
+- duanyong <hiduan@qq.com>
 - 社区维护：QuantSkills 组织
 
 ## 适用场景
