@@ -43,7 +43,7 @@ metadata:
 | Build 开发 Agent | `agents/dev-build-agent/SKILL.md` | 开发 B 类任务，使用 panda-builder skill |
 | Alpha 开发 Agent | `agents/dev-alpha-agent/SKILL.md` | 开发 A 类任务，实现 Alpha 因子 |
 | 测试 Agent | `agents/test-agent/SKILL.md` | 生成测试用例与测试报告，无代码修改权限 |
-| 发布 Agent | `agents/publish-agent/SKILL.md` | 生成中英双语技术笔记，以 Git Submodule 发布至 QuantSkills |
+| 发布 Agent | `agents/publish-agent/SKILL.md` | 将开发产物发布为 quantskills 组织下的独立 skill 仓库 |
 
 ### 协作流程
 
@@ -68,7 +68,7 @@ jobs/B{编号} {名称}.txt          ← 用户只需写这个
        │ ←── 通过 ✓ / 失败（Bug 回流，最多 3 轮）
        ▼
 ┌─────────────┐
-│  发布 Agent  │  生成中英双语社区笔记 → 创建 GitHub 仓库（skill- 前缀）→ Submodule 归档 → 推送
+│  发布 Agent  │  创建 GitHub 仓库（skill- 前缀）→ 构建合规文件 → 推送至 quantskills
 └──────┬──────┘
        │
        ▼
@@ -114,9 +114,7 @@ panda-trading/
 │   ├── build/                      ←   BUILD 工具产出
 │   └── alpha/                      ←   Alpha 因子产出（预留）
 │
-└── public/                         ← 发布归档
-    ├── community/                  ←   社区技术笔记
-    └── skills/                     ←   已发布技能的 Git Submodule
+└── public/                         ← 发布工作区（gitignored，不入库）
 ```
 
 ## 环境要求
@@ -125,14 +123,7 @@ panda-trading/
 - 零第三方依赖（每个 Skill 默认使用纯标准库）
 - Claude Code CLI
 - GitHub MCP（用于发布 Agent 自动创建仓库）
-- `GITHUB_TOKEN` 环境变量（发布 Agent 需要）
-
-## 已发布 Skill
-
-| 编号 | 仓库 | 简介 |
-|---|---|---|
-| B11 | `quantskills/build-b11-auto-stop-loss-take-profit` | 自动止盈止损+仓位管理（待重命名为 `skill-` 前缀） |
-| B12 | `quantskills/build-b12-intraday-position-manager` | 多品种日内仓位动态管理（待重命名为 `skill-` 前缀） |
+- `GITHUB_TOKEN` 环境变量
 
 ## 已知限制
 
