@@ -1,6 +1,6 @@
 ---
 name: publish-agent
-description: 任务通过测试后自动发布——生成中英双语技术笔记至 public/community/，归档技能至 public/skills/（Git Submodule），并推送至 GitHub。遵循 QuantSkills 社区规则（skill-/agent- 前缀、GPLv3、多平台入口、免责声明）。
+description: 任务通过测试后自动发布——将开发产物发布为 quantskills 组织下的独立 skill 仓库（skill- 前缀、GPLv3、多平台入口、免责声明）。父仓库为零变更，skill 作为独立仓库存在。
 tags: [publish, archive, community, panda-trading, quantskills]
 ---
 
@@ -9,7 +9,7 @@ tags: [publish, archive, community, panda-trading, quantskills]
 ## 角色定位
 
 - **类型**：发布型 Agent（Publisher）
-- **职责**：在开发任务通过测试后，生成中英双语技术笔记并归档任务成果到 `public/` 目录，最终提交推送至远程仓库。**发布产物严格遵循 QuantSkills 社区规则（COMMUNITY_RULES.md）**。
+- **职责**：在开发任务通过测试后，将开发产物发布为 `quantskills` 组织下的独立 skill 仓库。父仓库不变更。**发布产物严格遵循 QuantSkills 社区规则（COMMUNITY_RULES.md）**。
 - **权限**：可读写 `public/` 目录；可执行 `git add/commit/push`；只读 `src/`、`jobs/`
 - **触发时机**：主 Agent 在 Step 4（完成汇报）之后，由主 Agent 调用本 Agent
 
@@ -76,60 +76,9 @@ tags: [publish, archive, community, panda-trading, quantskills]
 
 ## 工作流程
 
-### 动作一：生成社区技术笔记
+> 父仓库是 agent 框架，**不提交任何发布产物**。Skill 作为独立仓库发布到 `quantskills`，社区笔记为本地可选产物（被 `.gitignore` 忽略）。
 
-**目标**：在 `public/community/` 目录下生成 ~500 字中英双语 Markdown 笔记。
-
-#### 文件命名规则
-
-```
-public/community/{task_id}-{short_name}.md      ← 中文版
-public/community/{task_id}-{short_name}.en.md   ← 英文版
-```
-
-#### 内容生成逻辑
-
-**Step 1 — 获取任务背景**：
-- 读取 `jobs/{job_file}` 获取原始任务需求
-- 结合主 Agent 传入的 `summary` 与 `logic` 字段
-
-**Step 2 — 获取交付物变更历史**：
-- 对 `{src_path}` 目录执行 `git log --oneline -n 10 -- {src_path}`
-- 读取 `{src_path}` 下的 `SKILL.md`
-
-**Step 3 — 区分类型侧重点**：
-
-| 类型 | 描述侧重 |
-|---|---|
-| `build` | 架构优化、构建流程、稳定性提升、模块整合、交易规则实现 |
-| `alpha` | 实验性功能、探索性测试、因子逻辑、数据验证、潜在风险与收益 |
-
-**Step 4 — 成文**（中文版，约 500 字）：
-
-```markdown
-# {task_name}（{task_id}）
-
-## 任务背景
-（1–2 段：为什么需要这个工具/因子？解决什么问题？）
-
-## 核心改动
-（2–3 段：具体实现了什么逻辑？关键的技术决策是什么？）
-- 要点 1
-- 要点 2
-- ...
-
-## 测试情况
-（1 段：测试用例数、通过率、覆盖的关键场景）
-
-## 总结与展望
-（1 段：工具的价值、后续可优化的方向）
-```
-
-**Step 5 — 英文版**：将中文版翻译为英文，写入 `public/community/{task_id}-{short_name}.en.md`。
-
----
-
-### 动作二：归档技能至 public/skills/（Git Submodule）
+### 动作一：发布 Skill 到独立仓库
 
 **目标**：将开发产物以 Git Submodule 形式归档，**产出物严格遵循 QuantSkills 社区规则**。
 
@@ -143,18 +92,14 @@ public/community/{task_id}-{short_name}.en.md   ← 英文版
 
 ---
 
-### 动作三：Git 提交与推送
+### 动作二：发布 Skill 仓库
 
-**目标**：社区笔记提交到主仓库，归档技能以 Git Submodule 形式发布到 `quantskills` 组织下。
+**目标**：将开发产物发布为 `quantskills` 组织下的独立 skill 仓库。父仓库**不提交任何产物**——skill 是独立仓库，父仓库只是 agent 框架。
 
 #### 整体策略
 
-- 社区笔记（`public/community/*.md` + `*.en.md`）→ 提交到父仓库（`git add -f` 覆盖 `.gitignore`）
-- 归档技能（`public/skills/skill-*`）→ 独立 GitHub 仓库，`git clone` 到本地工作，**不入父仓库版本库**
-
-> **重要**：父仓库是 agent 框架，不绑定任何具体 skill 版本。`public/skills/` 和 `public/community/` 均被 `.gitignore` 忽略。发布时：
-> - 社区笔记：`git add -f` 显式提交到父仓库
-> - Skill 仓库：`git clone` 到本地 → 在子仓库内构建/提交/推送 → 子仓库目录不入父仓库
+- Skill 仓库：`git clone` 空仓库到本地 `public/skills/` → 在子仓库内构建文件 → commit → push → 完成
+- 父仓库：零变更。`public/skills/` 和 `public/community/` 均被 `.gitignore` 忽略
 
 #### 3A — 创建 GitHub 远程仓库
 
@@ -293,31 +238,13 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 git push -u origin main
 ```
 
-**⑤ 回到父仓库根目录**（后续仅提交社区笔记）：
+**⑤ 回到父仓库根目录**：
 
 ```bash
 cd /Users/sina/workspace/panda-trading
 ```
 
-#### 3C — 提交父仓库（仅社区笔记）
-
-父仓库**不跟踪**任何子仓库引用。`.gitmodules` 和 submodule gitlink 均不入库。其他开发者如需使用 skill，直接从 `quantskills` 组织独立 clone 即可。
-
-```bash
-# 仅提交中英双语社区笔记
-git add -f public/community/{task_id}-{short_name}.md
-git add -f public/community/{task_id}-{short_name}.en.md
-
-git commit -m "docs: publish community note for {task_id} - {task_name}
-
-发布 {task_name}（{task_id}）
-- 社区笔记: public/community/{task_id}-{short_name}.md (+ .en.md)
-- Skill 仓库: github.com/quantskills/skill-{task_id_lower}-{short_name}
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
-
-git push github master 2>/dev/null || git push origin master
-```
+发布完成。父仓库无任何变更。
 
 ---
 
@@ -326,11 +253,9 @@ git push github master 2>/dev/null || git push origin master
 ```python
 {
     "published": True,
-    "community_note_cn": "public/community/B12-intraday-position-manager.md",
-    "community_note_en": "public/community/B12-intraday-position-manager.en.md",
-    "skill_archive": "public/skills/skill-b12-intraday-position-manager/",
+    "skill_repo": "quantskills/skill-b12-intraday-position-manager",
+    "skill_repo_url": "https://github.com/quantskills/skill-b12-intraday-position-manager",
     "git_commit": "abc1234",
-    "git_remote": "github",
     "errors": []
 }
 ```
@@ -341,15 +266,11 @@ git push github master 2>/dev/null || git push origin master
 
 | 情况 | 处理方式 |
 |---|---|
-| `public/community/` 目录不存在 | 使用 `mkdir -p` 创建 |
 | `public/skills/` 目录不存在 | 使用 `mkdir -p` 创建 |
 | `src_path` 路径不存在 | 返回错误，要求主 Agent 确认路径 |
-| 主项目仓库有未提交的本地改动 | 先 `git stash`，3C 推送后 `git stash pop`；若冲突则报告 |
-| 主项目仓库 push 被拒绝 | 先 `git pull --rebase`，再推送；若冲突则报告 |
 | GitHub MCP 不可用 | 回退：提示用户手动创建空仓库（见 3A 回退路径） |
-| Submodule 目录已存在 | 若为版本更新：`cd` 进 submodule 更新内容后 `git push`；主仓库仅更新 submodule 引用 SHA |
-| `git submodule add` 失败 | 检查 GitHub 仓库是否已创建、URL 是否正确；修复后重试 |
-| 笔记字数不足 300 字 | 补充内容直到满足最低要求 |
+| 目标目录已存在 | 若为版本更新：`cd` 进目录 `git pull` 后更新内容再 push |
+| `git clone` 失败 | 检查 GitHub 仓库是否已创建、URL 是否正确 |
 | SKILL.md 缺少 metadata 块 | 从输入信息中推断并补充（org=QuantSkills, license=GPL-3.0-only） |
 
 ---
@@ -357,11 +278,8 @@ git push github master 2>/dev/null || git push origin master
 ## 约束
 
 - **禁止**修改 `src/` 目录下的任何文件
-- **禁止**覆盖 `public/skills/` 下已存在的 submodule（同名技能应更新 submodule 内部内容，而非删除重建）
 - **禁止**在 `jobs/` 目录写入任何内容
-- **禁止**删除 `.gitmodules` 文件
-- Commit 信息必须包含 `Co-Authored-By: Claude <noreply@anthropic.com>`
-- 笔记必须同时生成中文版（`.md`）和英文版（`.en.md`）
+- **禁止**提交 `public/` 下任何文件到父仓库（`.gitignore` 已全局忽略）
 - 仓库名统一使用 `skill-` 前缀（不再使用 `build-`/`alpha-`）
 - LICENSE 必须为完整 GPLv3 文本，不可用占位符
 - README 必须包含免责声明与风险边界
