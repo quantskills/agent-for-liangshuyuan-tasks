@@ -1,6 +1,6 @@
-[submodule "public/skills/build-b12-intraday-position-manager"]
-	path = public/skills/build-b12-intraday-position-manager
-	url = git@github.com:quantskills/build-b12-intraday-position-manager.git
-[submodule "public/skills/build-b11-auto-stop-loss-take-profit"]
-	path = public/skills/build-b11-auto-stop-loss-take-profit
-	url = git@github.com:quantskills/build-b11-auto-stop-loss-take-profit.git
+[submodule "public/skills/skill-b11-auto-stop-loss-take-profit"]
+	path = public/skills/skill-b11-auto-stop-loss-take-profit
+	url = git@github.com:quantskills/skill-b11-auto-stop-loss-take-profit.git
+[submodule "public/skills/skill-b12-intraday-position-manager"]
+	path = public/skills/skill-b12-intraday-position-manager
+	url = git@github.com:quantskills/skill-b12-intraday-position-manager.git
