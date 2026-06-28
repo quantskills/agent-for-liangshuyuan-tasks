@@ -152,7 +152,9 @@ public/community/{task_id}-{short_name}.en.md   ← 英文版
 - 社区笔记（`public/community/*.md` + `*.en.md`）→ 直接提交到主仓库（`git add -f` 覆盖 `.gitignore`）
 - 归档技能（`public/skills/skill-*`）→ 独立 GitHub 仓库，主仓库通过 **Git Submodule 机制**引用
 
-> **重要**：`public/community/` 和 `public/skills/` 目录均被 `.gitignore` 忽略（`public/community/*` 和 `public/skills/*`），发布生产的文件不预存在仓库历史中。发布时通过 `git add -f` 显式添加。
+> **重要**：`public/community/` 和 `public/skills/` 目录均被 `.gitignore` 忽略，发布产物不预存在仓库历史中。
+> - 社区笔记：通过 `git add -f` 显式添加
+> - 子仓库：通过 `git submodule add` 创建，文件在**子仓库内部**提交，父仓库仅跟踪 gitlink
 
 #### 3A — 创建 GitHub 远程仓库
 
@@ -180,44 +182,42 @@ GitHub 仓库创建完成后：
 
 **① 添加 submodule**（通过 `git submodule add` 机制动态创建引用）：
 
-`git submodule add` 会自动完成以下操作：
-- 克隆远程仓库到 `public/skills/skill-{task_id_lower}-{short_name}/`
-- 在 `.gitmodules` 中写入 submodule 配置（path + url）
-- 将 submodule 目录以 gitlink（mode 160000）添加到本仓库索引
+`git submodule add` 会自动完成：
+- 克隆空仓库到 `public/skills/skill-{task_id_lower}-{short_name}/`
+- 在 `.gitmodules` 中写入 submodule 配置
+- 将 submodule 目录以 gitlink 添加到父仓库索引
 
 ```bash
 git submodule add git@github.com:quantskills/skill-{task_id_lower}-{short_name}.git public/skills/skill-{task_id_lower}-{short_name}
 ```
 
-> `.gitmodules` 由 `git submodule add` 自动创建或更新，**无需手动编写**。本仓库 `.gitignore` 中 `public/skills/*` 规则仅用于防止普通文件误提交，不影响 submodule 机制。
-
-**② 构建目录结构**（repo 根目录即为 Skill 根，**不嵌套**）：
+**② 进入子仓库，构建目录结构并生成合规文件**（后续操作均在子仓库内完成）：
 
 ```bash
-REPO="public/skills/skill-{task_id_lower}-{short_name}"
+cd public/skills/skill-{task_id_lower}-{short_name}
 
-# 开发产物直接放入 repo 根（SKILL.md / scripts / references）
-cp -r {src_path}/SKILL.md "$REPO/"
-cp -r {src_path}/scripts/ "$REPO/"
-cp -r {src_path}/references/ "$REPO/"
+# 开发产物直接放入 repo 根（扁平结构，不嵌套）
+cp -r ../../../{src_path}/SKILL.md .
+cp -r ../../../{src_path}/scripts/ .
+cp -r ../../../{src_path}/references/ .
 
 # 若为结果型/混合型，创建 production/ 子目录
-PROD_SRC="$(dirname {src_path})/生产产物"
+PROD_SRC="../../../$(dirname {src_path})/生产产物"
 if [ -d "$PROD_SRC" ] && [ "{production_type}" != "调用型" ]; then
-    mkdir -p "$REPO/production"
-    cp -r "$PROD_SRC"/* "$REPO/production/"
+    mkdir -p production
+    cp -r "$PROD_SRC"/* production/
 fi
 ```
 
-**③ 生成根层级文件**（使用 Write 工具，按 QuantSkills 社区规则）：
+**③ 在子仓库内生成根层级文件**（使用 Write 工具写入 `public/skills/skill-{task_id_lower}-{short_name}/` 下）：
 
 | 文件 | 要求 |
 |---|---|
-| `SKILL.md` | 已从 src 复制（需校验含 metadata 块：`organization`/`organization_url`/`repository`/`repository_url`/`project_type`/`collection`/`license: GPL-3.0-only`）。若无，在 frontmatter 中补充。 |
-| `README.md` | 中文交付文档，含免责声明（见下文模板） |
+| `SKILL.md` | 已从 src 复制。校验 frontmatter 含 metadata 块（`organization`/`organization_url`/`repository`/`repository_url`/`project_type`/`collection`/`license: GPL-3.0-only`）。若无则补充。 |
+| `README.md` | 中文交付文档，含免责声明（见下方模板） |
 | `README.en.md` | 英文交付文档，含英文免责声明 |
-| `LICENSE` | **完整 GPLv3 许可证文本**（见下文模板），不可用占位符 |
-| `INSTALL.md` | **多平台安装指南**（覆盖 Codex / Claude Code / Cursor / Hermes / OpenClaw，见下文模板） |
+| `LICENSE` | **完整 GPLv3 许可证文本**，不可用占位符 |
+| `INSTALL.md` | **多平台安装指南**（覆盖 Codex / Claude Code / Cursor / Hermes / OpenClaw） |
 | `requirements.txt` | Python 依赖声明 |
 
 **README.md 必须包含的内容**：
@@ -284,10 +284,9 @@ Copy to `~/.claude/skills/`, invoke with `/skill-{task_id_lower}-{short_name}`.
 - See SKILL.md for full limitations.
 ```
 
-**④ 在 submodule 中提交并推送**：
+**④ 在子仓库内提交并推送**（此时仍在 `public/skills/skill-{task_id_lower}-{short_name}/` 内）：
 
 ```bash
-cd public/skills/skill-{task_id_lower}-{short_name}
 git add .
 git commit -m "chore: publish {task_id} - {short_name}
 
@@ -297,21 +296,22 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 git push -u origin main
 ```
 
-**⑤ 回到项目根目录**：
+**⑤ 回到父仓库根目录**：
 
 ```bash
 cd /Users/sina/workspace/panda-trading
 ```
 
-#### 3C — 提交主项目仓库（社区笔记 + submodule 引用）
+#### 3C — 提交父仓库（社区笔记 + submodule 引用）
 
 ```bash
-# 添加中英双语社区笔记
+# 社区笔记用 -f 覆盖 .gitignore
 git add -f public/community/{task_id}-{short_name}.md
 git add -f public/community/{task_id}-{short_name}.en.md
 
-# 添加 submodule 配置和引用
-git add -f .gitmodules public/skills/skill-{task_id_lower}-{short_name}
+# submodule 引用：git submodule add 已自动暂存 .gitmodules + gitlink
+# 若子仓库有新的 commit 需更新引用：
+git add public/skills/skill-{task_id_lower}-{short_name}
 
 # 提交
 git commit -m "docs: publish community note for {task_id} - {task_name}
