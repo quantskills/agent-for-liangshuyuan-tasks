@@ -2,8 +2,10 @@ __pycache__/
 *.pyc
 */.DS_Store
 
+.idea/
 */.idea
 .claude/settings.local.json
 .gitmodules
 
 public/skills/*
+public/community/*
