@@ -149,12 +149,12 @@ public/community/{task_id}-{short_name}.en.md   ← 英文版
 
 #### 整体策略
 
-- 社区笔记（`public/community/*.md` + `*.en.md`）→ 直接提交到主仓库（`git add -f` 覆盖 `.gitignore`）
-- 归档技能（`public/skills/skill-*`）→ 独立 GitHub 仓库，主仓库通过 **Git Submodule 机制**引用
+- 社区笔记（`public/community/*.md` + `*.en.md`）→ 提交到父仓库（`git add -f` 覆盖 `.gitignore`）
+- 归档技能（`public/skills/skill-*`）→ 独立 GitHub 仓库，`git clone` 到本地工作，**不入父仓库版本库**
 
-> **重要**：`public/community/` 和 `public/skills/` 目录均被 `.gitignore` 忽略，发布产物不预存在仓库历史中。
-> - 社区笔记：通过 `git add -f` 显式添加
-> - 子仓库：通过 `git submodule add` 创建，文件在**子仓库内部**提交，父仓库仅跟踪 gitlink
+> **重要**：父仓库是 agent 框架，不绑定任何具体 skill 版本。`public/skills/` 和 `public/community/` 均被 `.gitignore` 忽略。发布时：
+> - 社区笔记：`git add -f` 显式提交到父仓库
+> - Skill 仓库：`git clone` 到本地 → 在子仓库内构建/提交/推送 → 子仓库目录不入父仓库
 
 #### 3A — 创建 GitHub 远程仓库
 
@@ -180,16 +180,13 @@ public/community/{task_id}-{short_name}.en.md   ← 英文版
 
 GitHub 仓库创建完成后：
 
-**① 添加 submodule**（通过 `git submodule add` 机制动态创建引用）：
-
-`git submodule add` 会自动完成：
-- 克隆空仓库到 `public/skills/skill-{task_id_lower}-{short_name}/`
-- 在 `.gitmodules` 中写入 submodule 配置
-- 将 submodule 目录以 gitlink 添加到父仓库索引
+**① 克隆空仓库到本地**（仅用于本次发布工作区，**不入父仓库版本库**）：
 
 ```bash
-git submodule add git@github.com:quantskills/skill-{task_id_lower}-{short_name}.git public/skills/skill-{task_id_lower}-{short_name}
+git clone git@github.com:quantskills/skill-{task_id_lower}-{short_name}.git public/skills/skill-{task_id_lower}-{short_name}
 ```
+
+> 使用 `git clone` 而非 `git submodule add`，避免自动暂存 `.gitmodules` 和 gitlink。父仓库不跟踪子仓库引用——其他开发者如需使用 skill，直接从 `quantskills` 组织独立 clone。
 
 **② 进入子仓库，构建目录结构并生成合规文件**（后续操作均在子仓库内完成）：
 
@@ -296,34 +293,29 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 git push -u origin main
 ```
 
-**⑤ 回到父仓库根目录**：
+**⑤ 回到父仓库根目录**（后续仅提交社区笔记）：
 
 ```bash
 cd /Users/sina/workspace/panda-trading
 ```
 
-#### 3C — 提交父仓库（社区笔记 + submodule 引用）
+#### 3C — 提交父仓库（仅社区笔记）
+
+父仓库**不跟踪**任何子仓库引用。`.gitmodules` 和 submodule gitlink 均不入库。其他开发者如需使用 skill，直接从 `quantskills` 组织独立 clone 即可。
 
 ```bash
-# 社区笔记用 -f 覆盖 .gitignore
+# 仅提交中英双语社区笔记
 git add -f public/community/{task_id}-{short_name}.md
 git add -f public/community/{task_id}-{short_name}.en.md
 
-# submodule 引用：git submodule add 已自动暂存 .gitmodules + gitlink
-# 若子仓库有新的 commit 需更新引用：
-git add public/skills/skill-{task_id_lower}-{short_name}
-
-# 提交
 git commit -m "docs: publish community note for {task_id} - {task_name}
 
 发布 {task_name}（{task_id}）
 - 社区笔记: public/community/{task_id}-{short_name}.md (+ .en.md)
-- Submodule: public/skills/skill-{task_id_lower}-{short_name} → github.com/quantskills/skill-{task_id_lower}-{short_name}
-- 遵循 QuantSkills 社区规则（skill- 前缀、GPLv3、多平台入口、免责声明）
+- Skill 仓库: github.com/quantskills/skill-{task_id_lower}-{short_name}
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 
-# 推送主仓库
 git push github master 2>/dev/null || git push origin master
 ```
 
