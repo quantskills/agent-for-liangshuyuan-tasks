@@ -13,25 +13,25 @@
 
 The project is built with the **Python standard library only** — no pandas, numpy, or other third-party dependencies (unless explicitly required by a task), ensuring every Skill is lightweight, self-contained, and freely callable by agents or Alpha signals.
 
+This is an **Agent-type repository** (`agent-for-liangshuyuan-tasks`), compliant with QuantSkills community rules. See `AGENTS.md` for the agent declaration.
+
 ### Core Principles
 
 | Principle | Description |
 |---|---|
 | **Skills are Tools** | Each subdirectory is an independent trading BUILD skill — runnable, testable, and deployable in isolation |
 | **BUILD Serves Alpha** | BUILD is the tool layer; Alpha is the signal layer. Alpha calls BUILD, never duplicates its logic |
-| **Agent Collaboration** | Multi-agent pipeline: analysis → development → testing → acceptance, fully automated |
+| **Agent Collaboration** | Multi-agent pipeline: analysis → development → testing → publishing, fully automated |
 | **Zero Dependencies** | Pure Python standard library by default — runs anywhere without setup |
+
+### Maintainer
+
+- duanyong <hiduan@qq.com>
+- Community: QuantSkills (https://github.com/quantskills)
 
 ---
 
 ## 🏗️ Architecture
-
-### Skill System
-
-```
-skills/
-└── panda-builder/          ← Scaffold Skill: unified spec for creating/verifying BUILD skills
-```
 
 ### Task Classification
 
@@ -42,39 +42,58 @@ skills/
 
 ### Multi-Agent Collaboration
 
+Put task requirements into `jobs/*.txt`, and the Agent system handles the full pipeline:
+
 ```
-User issues a task
+jobs/B{id} {name}.txt
      │
      ▼
-┌─────────────────┐      ┌────────────────────┐
-│   Main Agent    │─────→│  Analyst Agent     │  Reads jobs/*.txt, outputs TaskSpec
-└────────┬────────┘      └────────────────────┘
-         │ ←── TaskSpec (with ambiguity flags)
-         │
-         ├── B-type task → Build Dev Agent + panda-builder skill
-         ├── A-type task → Alpha Dev Agent
-         │
-         │ ←── DevReport (artifacts + self-check report)
-         ▼
-┌─────────────────┐
-│   Test Agent    │  Generates test cases → runs → outputs TestReport
-└────────┬────────┘
-         │ ←── Pass ✓ / Fail (bugs flow back, max 3 iterations)
-         ▼
-     Task Complete
+┌──────────────────┐
+│  Analyst Agent   │  Reads job file → identifies B/A type → outputs TaskSpec
+└──────┬───────────┘
+       │
+       ▼
+┌─────────────┐
+│  Main Agent  │── B-type → Build Dev Agent + panda-builder
+└──────┬──────┘── A-type → Alpha Dev Agent
+       │
+       │ ←── DevReport (artifacts + self-check)
+       ▼
+┌─────────────┐
+│  Test Agent  │  Generates cases → runs → TestReport
+└──────┬──────┘
+       │ ←── Pass ✓ / Fail (bugs rebound, max 3 iterations)
+       ▼
+┌─────────────┐
+│ Publish Agent│  Bilingual community notes → GitHub repo (skill- prefix)
+│              │  → Git Submodule → push to quantskills org
+└──────┬──────┘
+       │
+       ▼
+   ✅ Complete + Published (QuantSkills Community Rules compliant)
 ```
 
-| Agent | Responsibility | Write Access |
+| Agent | Responsibility | Spec |
 |---|---|---|
-| **Main Agent** (`agents/main-agent/`) | Orchestration, connects all sub-agents | Yes |
-| **Analyst Agent** (`agents/analyst-agent/`) | Reads `jobs/*.txt`, outputs TaskSpec | Read-only |
-| **Build Dev Agent** (`agents/dev-build-agent/`) | Develops B-type tasks with panda-builder | `src/build/` |
-| **Alpha Dev Agent** (`agents/dev-alpha-agent/`) | Develops A-type tasks | `src/alpha/` |
-| **Test Agent** (`agents/test-agent/`) | Generates test cases & reports | Read-only execution |
+| **Analyst** | Reads `jobs/*.txt`, outputs TaskSpec | `agents/analyst-agent/SKILL.md` |
+| **Build/Alpha Dev** | Codes to TaskSpec, outputs Python Skill | `agents/dev-{build,alpha}-agent/SKILL.md` |
+| **Test** | Generates test cases, validates I/O, reports bugs | `agents/test-agent/SKILL.md` |
+| **Publish** | Bilingual notes, GitHub repo (skill- prefix), Submodule archive | `agents/publish-agent/SKILL.md` |
 
 ---
 
 ## 📦 Implemented Modules
+
+### B11 — Auto Stop-Loss / Take-Profit + Position Sizing
+
+**Features**: Entry-date-aware stop-loss (+5% gap-up take-profit, -3% gap-down stop-loss, ≥2 day force-close). Single-stock >10% position cap. Supports A-shares and futures.
+
+**Repo**: [`quantskills/skill-b11-auto-stop-loss-take-profit`](https://github.com/quantskills/skill-b11-auto-stop-loss-take-profit)
+
+```bash
+cd public/skills/skill-b11-auto-stop-loss-take-profit/scripts
+python3 build.py && python3 test.py   # 16/16 passing
+```
 
 ### B12 — Multi-Instrument Intraday Position Manager v2
 
@@ -90,26 +109,13 @@ User issues a task
 | 4 | PnL > +1% | Add 50% (with cash/margin check) |
 | 5 | Otherwise | Hold |
 
-**Features**:
-
-- ✅ T+1 / T+0 differentiation (A-shares/ETFs block selling locked positions)
-- ✅ Yesterday/today position separation (sellable_qty / locked_qty)
-- ✅ Independent margin/cash validation — blocks orders when insufficient
-- ✅ Contract multiplier central table (contract_specs.json)
-- ✅ HK stock lot_size override table
-- ✅ Standard 8-field order instruction + structured reason prefix
+**Repo**: [`quantskills/skill-b12-intraday-position-manager`](https://github.com/quantskills/skill-b12-intraday-position-manager)
 
 ```python
-# Usage example
 from scripts.build import run
-
 results = run([
-    {"code": "600036", "pnl_pct":  0.015, "sellable_qty":  800, "locked_qty":   0,
-     "price": 10.0,    "available_cash": 100000, "time": "10:00"},
-    {"code": "IF2406", "pnl_pct":  0.015, "sellable_qty":    2, "locked_qty":   0,
-     "price": 4000.0,  "available_cash": 200000, "time": "10:00"},
-    {"code":  "00700", "pnl_pct": -0.007, "sellable_qty":  200, "locked_qty":   0,
-     "price": 400.0,   "available_cash":      0, "time": "10:00"},
+    {"code": "600036", "pnl_pct": 0.015, "sellable_qty": 800, "locked_qty": 0,
+     "price": 10.0, "available_cash": 100000, "time": "10:00"},
 ])
 ```
 
@@ -118,7 +124,7 @@ results = run([
 | ID | Task | Status |
 |---|---|---|
 | B5 | Morning Auction Scanner | 📋 Requirements recorded |
-| B12 | Position Manager v3 (short/bidirectional/spread) | 🔜 Planned |
+| B12 v3 | Position Manager (short/bidirectional/spread) | 🔜 Planned |
 
 ---
 
@@ -126,52 +132,42 @@ results = run([
 
 ```
 panda-trading/
-├── README.md                       ← Chinese readme
-├── README.en.md                    ← English readme (this file)
+├── README.md                       ← Chinese README
+├── README.en.md                    ← English README (this file)
 ├── LICENSE                         ← MIT License
-├── CLAUDE.md                       ← Claude Code project spec (Agent collaboration, Skill architecture, data interfaces)
+├── AGENTS.md                       ← Agent declaration (QuantSkills community rules)
+├── CLAUDE.md                       ← Claude Code project spec
 │
 ├── agents/                         ← Multi-agent collaboration specs
-│   ├── TASK_REQUIREMENTS.md        ←   Agent roles, workflow, message formats
-│   ├── main-agent/SKILL.md         ←   Main Agent orchestration rules
-│   ├── analyst-agent/SKILL.md      ←   Analyst Agent rules
-│   ├── dev-build-agent/SKILL.md    ←   Build Dev Agent rules
-│   ├── dev-alpha-agent/SKILL.md    ←   Alpha Dev Agent rules
-│   └── test-agent/SKILL.md         ←   Test Agent rules
+│   ├── TASK_REQUIREMENTS.md
+│   ├── main-agent/SKILL.md
+│   ├── analyst-agent/SKILL.md
+│   ├── dev-build-agent/SKILL.md
+│   ├── dev-alpha-agent/SKILL.md
+│   ├── test-agent/SKILL.md
+│   └── publish-agent/SKILL.md      ←   Publish Agent (QuantSkills-compliant)
 │
 ├── skills/                         ← Local project skills
-│   └── panda-builder/              ←   BUILD scaffold & verification spec
-│       ├── SKILL.md
-│       └── skill.json
+│   └── panda-builder/
 │
 ├── docs/                           ← Production rule docs
-│   ├── BUILD开发与生产规则V2.md     ←   BUILD tool development full-lifecycle spec
-│   └── Alpha因子开发与生产规则V2.md ←   Alpha factor development & production spec
 │
 ├── jobs/                           ← Raw task requirements
-│   ├── B12 日内仓位动态管理.txt    ←   Completed
-│   └── B5 早盘竞价扫描.txt         ←   Pending
+│   ├── B11 自动止盈止损和仓位管理.txt
+│   ├── B12 日内仓位动态管理.txt
+│   └── B5 早盘竞价扫描.txt
 │
-└── src/                            ← Development artifacts (all outputs go here)
-    ├── build/                      ←   BUILD tools
-    │   └── build-B12-intraday-position-manager/              ←     B12 Intraday Position Manager
-    │       └── 开发产物/            ←       (development artifacts)
-    │           ├── SKILL.md
-    │           ├── scripts/
-    │           │   ├── build.py        ← Main entry: run() + validate_input()
-    │           │   ├── test.py         ← Self-test script
-    │           │   ├── common.py       ← Shared constants & utilities
-    │           │   ├── classify.py     ← Instrument classification
-    │           │   ├── specs.py        ← Contract spec loader
-    │           │   └── markets/        ← Market modules
-    │           │       ├── a_stock.py          ← A-Shares + ETFs (T+1)
-    │           │       ├── index_future.py     ← Index Futures (IF/IC/IH/IM)
-    │           │       ├── commodity_future.py ← Commodity Futures
-    │           │       └── hk_stock.py         ← HK Stocks + ETFs (T+0)
-    │           └── references/
-    │               ├── api_guide.md     ← API documentation
-    │               └── contract_specs.json ← Contract specs central table
-    └── alpha/                      ←   Alpha factors (reserved)
+├── public/                         ← Published archive
+│   ├── community/                  ←   Community notes (bilingual)
+│   └── skills/                     ←   Published skills (Git Submodule)
+│       ├── skill-b11-auto-stop-loss-take-profit/
+│       └── skill-b12-intraday-position-manager/
+│
+└── src/                            ← Development artifacts
+    ├── build/
+    │   └── build-B12-intraday-position-manager/
+    │       └── 开发产物/
+    └── alpha/                      ← (reserved)
 ```
 
 ---
@@ -183,60 +179,64 @@ panda-trading/
 - Python 3.8+
 - No third-party dependencies (stdlib only)
 
-### Run B12 Position Manager
+### Run Published Skills
 
 ```bash
-# Direct run (includes built-in examples)
-python3 src/build/build-B12-intraday-position-manager/开发产物/scripts/build.py
+# B11 — Auto Stop-Loss / Take-Profit + Position Sizing
+cd public/skills/skill-b11-auto-stop-loss-take-profit/scripts
+python3 build.py && python3 test.py
 
-# Run tests
-python3 src/build/build-B12-intraday-position-manager/开发产物/scripts/test.py
+# B12 — Intraday Position Manager
+cd public/skills/skill-b12-intraday-position-manager/scripts
+python3 build.py && python3 test.py
 ```
 
-### Use as a Module
+### Install to Claude Code
 
-```python
-import sys
-sys.path.insert(0, "src/build/build-B12-intraday-position-manager/开发产物/scripts")
-from build import run
-
-# Single position
-order = run({
-    "code": "600036",
-    "pnl_pct": 0.015,
-    "sellable_qty": 800,
-    "locked_qty": 0,
-    "price": 10.0,
-    "available_cash": 100000,
-    "time": "10:00",
-})
-
-# Batch
-orders = run([...])   # Pass a list for batch processing
+```bash
+cp -r public/skills/skill-b12-intraday-position-manager ~/.claude/skills/
+# Invoke: /skill-b12-intraday-position-manager
 ```
 
 ---
 
 ## 📐 Development Standards
 
-### BUILD Skill Directory Structure (panda-builder spec)
+### BUILD Skill Directory Structure (panda-builder)
 
 ```
 build-{id}-{name}/
 ├── 开发产物/                     ← Development artifacts
-│   ├── SKILL.md                   ← Skill specification (required)
+│   ├── SKILL.md
 │   ├── scripts/
-│   │   ├── build.py               ← Main script: must include run() + validate_input()
-│   │   └── test.py                ← Test script (required)
+│   │   ├── build.py               ← run() + validate_input()
+│   │   └── test.py
 │   ├── references/
-│   │   └── api_guide.md           ← Data interface docs (required)
-│   └── demo.mp4                   ← Demo video (required)
-└── 生产产物/                      ← Production artifacts (result-type BUILD only)
+│   │   └── api_guide.md
+│   └── demo.mp4
+└── 生产产物/                      ← Production (result-type only)
     ├── SKILL.md
     └── 数据库.parquet
 ```
 
-### Standard Order Instruction Format
+### Publish Standard (QuantSkills Community Rules)
+
+Published skills are transformed into standalone repos:
+
+```
+skill-{id}-{name}/                ← GitHub repo (skill- prefix)
+├── SKILL.md                       ← Root-level declaration (with metadata block)
+├── README.md                      ← Chinese README (with disclaimer)
+├── README.en.md                   ← English README
+├── LICENSE                        ← GPL-3.0
+├── INSTALL.md                     ← Multi-platform guide (Codex/Cursor/Hermes/OpenClaw/Claude Code)
+├── requirements.txt
+├── scripts/
+├── references/
+└── production/                    ← (result-type/hybrid only)
+```
+
+### Standard Order Format
 
 ```python
 {
@@ -251,158 +251,12 @@ build-{id}-{name}/
 }
 ```
 
-### A-Share Trading Constraints
-
-- Minimum trading unit: 100 shares (all quantity changes round down to multiples of 100)
-- Market close: 15:00, force-close window: 14:45
-- T+1 Rule: Positions opened today are locked and cannot be sold same-day
-
-### BUILD Production Types
-
-| Type | When to use | Deliverables |
-|---|---|---|
-| **Callable** | Lightweight, real-time, depends on caller input | `SKILL.md + scripts/` |
-| **Result-type** | Heavy computation, multi-consumer, scheduled, needs caching | `SKILL.md + 数据库.parquet` |
-| **Hybrid** | Supports both instant calls and scheduled production | All of the above |
-
----
-
-## 🤝 Contributing
-
-1. **Fork** this repository
-2. Create a `Feat_xxx` branch
-3. Place your work under `src/build/` or `src/alpha/`, following panda-builder conventions
-4. Ensure `python3 scripts/build.py` runs independently
-5. Commit and create a **Pull Request**
-
-### Minimal Steps to Develop a BUILD Skill
-
-```bash
-# 1. Create directory structure
-mkdir -p src/build/build-{id}-{name}/开发产物/{scripts,references}
-
-# 2. Write build.py (must implement run() and validate_input())
-# 3. Write test.py (cover normal/edge/error cases)
-# 4. Write SKILL.md (specification)
-# 5. Write references/api_guide.md (API docs)
-
-# 6. Self-test
-python3 src/build/build-{id}-{name}/开发产物/scripts/build.py
-python3 src/build/build-{id}-{name}/开发产物/scripts/test.py
-
-# 7. Commit
-```
-
----
-
----
-
-## 🤖 External AI Guide
-
-> If you are an external AI (e.g., Claude Code, Copilot, Cursor, etc.), follow this standard protocol upon entering this repository.
-
-### Step 1: Skill Discovery
-
-Traverse `src/build/` and `src/alpha/` directories — each subdirectory matching `build-{id}-{name}/` or `alpha-{id}-{name}/` is a Skill:
-
-```bash
-# List all implemented BUILD skills
-ls -d src/build/build-*/开发产物/
-
-# List all implemented Alpha skills
-ls -d src/alpha/alpha-*/
-```
-
-### Step 2: Read SKILL.md — Understand the Skill
-
-Each Skill's `开发产物/SKILL.md` is its atomic specification document. Always read it first. The frontmatter and body tell you:
-
-| What you need to know | Where to find it in SKILL.md |
-|---|---|
-| What problem this Skill solves | `description` (frontmatter) + `## 工具定位` |
-| When to use it | `## 适用场景` |
-| Required input fields | `## 输入` table |
-| Output fields | `## 输出` table |
-| How to invoke it | `## 调用方式` (includes Python import example) |
-| Whether Alpha can call it | `## 可被 Alpha 调用` |
-| Whether it produces Parquet results | `## 是否需要生产结果` |
-
-### Step 3: Validate the Skill
-
-Run these checks on each Skill:
-
-```bash
-BUILD_DIR="src/build/build-B12-intraday-position-manager/开发产物"   # Replace with the Skill you're checking
-
-# 1. Structural integrity
-echo "=== Required files ==="
-for f in SKILL.md scripts/build.py scripts/test.py references/api_guide.md; do
-  [ -f "$BUILD_DIR/$f" ] && echo "✅ $f" || echo "❌ Missing $f"
-done
-
-# 2. Code entry points — build.py must implement run() + validate_input()
-echo ""
-echo "=== Entry functions ==="
-grep -q "def run(" "$BUILD_DIR/scripts/build.py" && echo "✅ run()" || echo "❌ Missing run()"
-grep -q "def validate_input(" "$BUILD_DIR/scripts/build.py" && echo "✅ validate_input()" || echo "❌ Missing validate_input()"
-
-# 3. Self-test
-echo ""
-echo "=== Self-test ==="
-python3 "$BUILD_DIR/scripts/build.py" && echo "✅ build.py runs independently" || echo "❌ build.py failed"
-python3 "$BUILD_DIR/scripts/test.py" && echo "✅ test.py passed" || echo "❌ test.py failed"
-```
-
-### Step 4: Invoke the Skill
-
-All BUILD skills follow a unified calling convention. For **callable** BUILD skills (e.g., B12), import directly:
-
-```python
-import sys
-sys.path.insert(0, "src/build/build-B12-intraday-position-manager/开发产物/scripts")
-from build import run
-
-# Single input (dict) → single output (dict)
-order = run({
-    "code": "600036", "pnl_pct": 0.015,
-    "sellable_qty": 800, "locked_qty": 0,
-    "price": 10.0, "available_cash": 100000, "time": "10:00",
-})
-
-# Batch input (list) → batch output (list)
-orders = run([pos1, pos2, pos3])
-```
-
-For **result-type** BUILD skills, read `生产产物/数据库.parquet` directly — do NOT re-pull raw data and re-compute.
-
-### Step 5: Determine Production Type
-
-| Type | How to identify | Correct action |
-|---|---|---|
-| **Callable** | SKILL.md states "是否需要生产结果：否" | `import build; build.run(data)` |
-| **Result-type** | `生产产物/数据库.parquet` exists | Read Parquet directly, do not recompute |
-| **Hybrid** | Both exist | Prefer reading Parquet; call build.py when needed |
-
-### Common Mistakes (AI should avoid)
-
-- ❌ Making position decisions ad-hoc instead of calling the B12 position manager Skill
-- ❌ Re-pulling raw market data and re-computing factors for result-type BUILD skills
-- ❌ Ignoring documented limitations in SKILL.md (e.g., B12 is long-only)
-- ❌ Guessing input/output formats without reading `references/api_guide.md`
-- ❌ Skipping `validate_input()` and passing dirty data directly
-
 ---
 
 ## 📄 License
 
-This project is open-sourced under the [MIT License](./LICENSE). Copyright (c) 2026 Maduan.
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 
----
+This project is open-sourced under the MIT License. Copyright (c) 2026 duanyong.
 
-## 📚 References
-
-- [BUILD Development & Production Rules V2](./docs/BUILD开发与生产规则V2.md) (Chinese)
-- [Alpha Factor Development & Production Rules V2](./docs/Alpha因子开发与生产规则V2.md) (Chinese)
-- [Multi-Agent Collaboration Spec](./agents/TASK_REQUIREMENTS.md) (Chinese)
-- [panda-builder Skill Spec](./skills/panda-builder/SKILL.md) (Chinese)
-- [B12 API Documentation](./src/build/build-B12-intraday-position-manager/开发产物/references/api_guide.md) (Chinese)
+> Published Skill sub-repos (`skill-b11-*`, `skill-b12-*`) use GPL-3.0, per QuantSkills community rules.
