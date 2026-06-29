@@ -26,7 +26,7 @@ This is an **Agent-type repository** (`agent-for-liangshuyuan-tasks`), compliant
 
 ### Maintainer
 
-- duanyong <hiduan@qq.com>
+- 段绪勇 [https://github.com/duanyong](https://github.com/duanyong) <hiduan@qq.com>
 - Community: QuantSkills (https://github.com/quantskills)
 
 ---
@@ -255,8 +255,8 @@ skill-{id}-{name}/                ← GitHub repo (skill- prefix)
 
 ## 📄 License
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](./LICENSE)
 
-This project is open-sourced under the MIT License. Copyright (c) 2026 duanyong.
+This project is open-sourced under the GPL-3.0 License. Copyright (C) 2026 QuantSkills.
 
 > Published Skill sub-repos (`skill-b11-*`, `skill-b12-*`) use GPL-3.0, per QuantSkills community rules.
