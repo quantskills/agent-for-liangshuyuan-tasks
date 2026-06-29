@@ -26,7 +26,7 @@ This is an **Agent-type repository** (`agent-for-liangshuyuan-tasks`), compliant
 
 ### Maintainer
 
-- 段绪勇 [https://github.com/duanyong](https://github.com/duanyong) <hiduan@qq.com>
+- 段绪勇 [https://github.com/duanyong](https://github.com/duanyong)
 - Community: QuantSkills (https://github.com/quantskills)
 
 ---
