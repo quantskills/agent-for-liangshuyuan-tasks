@@ -1,0 +1,3 @@
+[submodule "public/skills/skill-b12-intraday-position-manager"]
+	path = public/skills/skill-b12-intraday-position-manager
+	url = git@github.com:quantskills/skill-b12-intraday-position-manager.git
