@@ -88,7 +88,7 @@ python3 <skill目录>/scripts/build.py
 
 ## 架构约定
 
-每个 BUILD skill 目录结构遵循：
+每个 BUILD skill 目录结构遵循四层架构。具体输出数据结构由任务实际需求定义，以下为**仓位管理类 BUILD** 的参考示例：
 
 - **配置常量** — 交易规则阈值（如止盈止损百分比、时间窗口）定义在文件顶部
 - **判断层** — 纯函数，输入状态返回布尔值
@@ -96,7 +96,7 @@ python3 <skill目录>/scripts/build.py
 - **批量层** — `batch_manage(positions)` 循环调用决策层
 - **输出层** — `print_order()` 格式化打印，`__main__` 提供示例数据
 
-## 调仓指令数据结构
+### 仓位管理类 BUILD 输出结构（参考）
 
 ```python
 {
@@ -111,7 +111,9 @@ python3 <skill目录>/scripts/build.py
 }
 ```
 
-## A股交易约束
+> **注意**：非仓位管理类 BUILD（如数据处理、监控预警等）的输出结构由任务实际需求决定，不做统一约束。
+
+### A股交易约束（仓位管理类适用）
 
 - 最小交易单位为 100 股，加仓/减仓数量需向下取整到 100 的整数倍
 - 收盘时间 15:00，强平窗口默认收盘前 15 分钟（14:45）
@@ -140,9 +142,11 @@ python3 <skill目录>/scripts/build.py
 |---|---|---|
 | §「任务列表」 | 主 Agent、需求分析 Agent | B*/A* 前缀判断、任务类型映射 |
 | §「项目目录规则」 | 需求分析 Agent、主 Agent、Alpha 开发 Agent | 确定 target_dir 路径 |
-| §「调仓指令数据结构」 | 需求分析 Agent、Build 开发 Agent、测试 Agent | 输出 dict 的标准字段 |
-| §「A股交易约束」 | 需求分析 Agent、Build 开发 Agent、测试 Agent | 100股整数倍约束、14:45强平时间 |
 | §「架构约定」 | Build 开发 Agent | build.py 四层结构实现规范 |
+| §「仓位管理类 BUILD 输出结构」 | 需求分析 Agent、Build 开发 Agent、测试 Agent | 仓位管理类任务的输出 dict 参考字段 |
+| §「A股交易约束」 | 需求分析 Agent、Build 开发 Agent、测试 Agent | 仓位管理类任务适用：100股整数倍、14:45强平时间 |
+
+> **输出规范原则**：各任务的实际输出数据结构由 `jobs/*.txt` 中的需求文档决定，以上仅为仓位管理类的参考示例。非仓位管理类 BUILD 和 Alpha 任务不受此结构约束。
 
 ### 启动多 Agent 协作
 
