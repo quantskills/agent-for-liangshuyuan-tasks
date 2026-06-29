@@ -109,9 +109,6 @@ panda-trading/
 ├── docs/                           ← Production rule docs
 │
 ├── jobs/                           ← Raw task requirements
-│   ├── B11 自动止盈止损和仓位管理.txt
-│   ├── B12 日内仓位动态管理.txt
-│   └── B5 早盘竞价扫描.txt
 │
 ├── public/                         ← Published archive
 │   ├── community/                  ←   Community notes (bilingual)
