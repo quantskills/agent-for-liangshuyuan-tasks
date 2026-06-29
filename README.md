@@ -26,7 +26,7 @@
 
 ### 维护者
 
-- 段绪勇 [https://github.com/duanyong](https://github.com/duanyong) <hiduan@qq.com>
+- 段绪勇 [https://github.com/duanyong](https://github.com/duanyong)
 - 社区维护：QuantSkills (https://github.com/quantskills)
 
 ---
