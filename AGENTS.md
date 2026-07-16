@@ -12,6 +12,17 @@ metadata:
   license: MIT
 ---
 
+```json qsh-form
+{
+  "version": 1,
+  "task": {
+    "placeholder": "请描述要开发的量化 BUILD 工具或 Alpha 因子，包括功能、输入输出、验收要求及是否需要发布",
+    "required": true
+  },
+  "prompt_template": "{{#task}}任务与材料：\n{{task}}\n\n{{/task}}{{#attachments}}用户上传的材料（已放入工作区）：\n{{attachments}}\n\n{{/attachments}}请按量枢学院多 Agent 协作流程分析任务类型，依次完成需求结构化、开发、自检、测试与交付；仅在用户明确要求且具备条件时执行发布，并输出中文执行报告。"
+}
+```
+
 # 量枢学院 · Panda Trading — 多 Agent 协作框架
 
 ## 项目定位
