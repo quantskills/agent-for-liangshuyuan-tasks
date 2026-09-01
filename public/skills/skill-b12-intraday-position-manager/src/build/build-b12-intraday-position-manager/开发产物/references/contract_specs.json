@@ -1,0 +1,76 @@
+{
+  "version": "v2",
+  "description": "B12 v2 合约规格中央表 — 覆盖 A股、A股ETF、股指期货、商品期货、港股+ETF",
+  "categories": {
+    "A_STOCK": {
+      "description": "沪深A股",
+      "lot_size": 100,
+      "multiplier": 1,
+      "margin_rate": 1.0,
+      "settlement": "T+1",
+      "tick_size": 0.01,
+      "fee_rate": 0.0005,
+      "min_fee": 5.0,
+      "force_close_time": "14:45"
+    },
+    "A_ETF": {
+      "description": "沪深ETF",
+      "lot_size": 100,
+      "multiplier": 1,
+      "margin_rate": 1.0,
+      "settlement": "T+1",
+      "tick_size": 0.001,
+      "fee_rate": 0.0003,
+      "min_fee": 5.0,
+      "force_close_time": "14:45"
+    },
+    "INDEX_FUTURE": {
+      "description": "股指期货",
+      "lot_size": 1,
+      "settlement": "T+0",
+      "fee_rate": 0.000023,
+      "force_close_time": "14:45",
+      "contracts": {
+        "IF": {"multiplier": 300, "margin_rate": 0.12, "tick_size": 0.2},
+        "IC": {"multiplier": 200, "margin_rate": 0.14, "tick_size": 0.2},
+        "IH": {"multiplier": 300, "margin_rate": 0.12, "tick_size": 0.2},
+        "IM": {"multiplier": 200, "margin_rate": 0.15, "tick_size": 0.2}
+      }
+    },
+    "COMMODITY_FUTURE": {
+      "description": "商品期货",
+      "lot_size": 1,
+      "settlement": "T+0",
+      "fee_rate": 0.0001,
+      "force_close_time": "14:45",
+      "contracts": {
+        "rb": {"multiplier": 10,    "margin_rate": 0.10, "tick_size": 1.0},
+        "cu": {"multiplier": 5,     "margin_rate": 0.10, "tick_size": 10.0},
+        "m":  {"multiplier": 10,    "margin_rate": 0.09, "tick_size": 1.0},
+        "au": {"multiplier": 1000,  "margin_rate": 0.10, "tick_size": 0.02},
+        "ag": {"multiplier": 15,    "margin_rate": 0.12, "tick_size": 1.0},
+        "i":  {"multiplier": 100,   "margin_rate": 0.13, "tick_size": 0.5}
+      }
+    },
+    "HK_STOCK": {
+      "description": "港股及港股ETF",
+      "lot_size": 100,
+      "multiplier": 1,
+      "margin_rate": 1.0,
+      "settlement": "T+0",
+      "tick_size": 0.01,
+      "fee_rate": 0.001,
+      "min_fee": 18.0,
+      "force_close_time": "15:45",
+      "note": "港股 lot_size 各异，未在 hk_lot_overrides 命中的默认 100"
+    }
+  },
+  "hk_lot_overrides": {
+    "00700": 100,
+    "00388": 100,
+    "02800": 500,
+    "03690": 100,
+    "09988": 100,
+    "00005": 400
+  }
+}
