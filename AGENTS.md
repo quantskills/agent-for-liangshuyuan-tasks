@@ -9,7 +9,7 @@ metadata:
   repository_url: https://github.com/quantskills/agent-for-liangshuyuan-tasks
   project_type: agent
   collection: agent-framework
-  license: MIT
+  license: GPL-3.0-only
 ---
 
 ```json qsh-form
@@ -28,7 +28,7 @@ metadata:
 ## 项目定位
 
 - **类型**：Agent 协作框架（Agent Orchestration Framework）
-- **解决问题**：将量化交易工具的开发流程标准化——用户只需写需求文件（`jobs/*.txt`），Agent 系统自动完成需求分析 → 路由派发 → 编码开发 → 测试验证 → 社区发布的全流程
+- **解决问题**：将量化交易工具的开发流程标准化——用户只需写需求文件（`jobs/*.txt`），Agent 系统自动完成需求分析 → 路由派发 → 编码开发 → 测试验证 → 独立仓库发布的全流程
 - **适用对象**：量化交易开发者、Claude Code 用户、QuantSkills 社区贡献者
 
 ## 维护者
@@ -54,7 +54,7 @@ metadata:
 | Build 开发 Agent | `agents/dev-build-agent/SKILL.md` | 开发 B 类任务，使用 panda-builder skill |
 | Alpha 开发 Agent | `agents/dev-alpha-agent/SKILL.md` | 开发 A 类任务，实现 Alpha 因子 |
 | 测试 Agent | `agents/test-agent/SKILL.md` | 生成测试用例与测试报告，无代码修改权限 |
-| 发布 Agent | `agents/publish-agent/SKILL.md` | 将开发产物发布为 quantskills 组织下的独立 skill 仓库 |
+| 发布 Agent | `agents/publish-agent/SKILL.md` | 将 skill 发布为 quantskills 组织下的独立仓库 |
 
 ### 协作流程
 
@@ -71,7 +71,7 @@ jobs/B{编号} {名称}.txt          ← 用户只需写这个
 │  主 Agent   │──── B 类 → Build 开发 Agent + panda-builder
 └──────┬──────┘──── A 类 → Alpha 开发 Agent
        │
-       │ ←── DevReport（产物路径 + 自检报告）
+       │ ←── DevReport（skill 路径 + 自检报告）
        ▼
 ┌─────────────┐
 │  测试 Agent  │  生成用例 → 运行 → TestReport
@@ -79,7 +79,7 @@ jobs/B{编号} {名称}.txt          ← 用户只需写这个
        │ ←── 通过 ✓ / 失败（Bug 回流，最多 3 轮）
        ▼
 ┌─────────────┐
-│  发布 Agent  │  创建 GitHub 仓库（skill- 前缀）→ 构建合规文件 → 推送至 quantskills
+│  发布 Agent  │  创建 GitHub 仓库（skill-{slug}）→ 构建合规文件 → 推送至 quantskills
 └──────┬──────┘
        │
        ▼
@@ -90,8 +90,33 @@ jobs/B{编号} {名称}.txt          ← 用户只需写这个
 
 | 前缀 | 类型 | 开发 Agent | 产出目录 |
 |---|---|---|---|
-| `B` | BUILD 工具 | Build 开发 Agent | `src/build/build-{编号}-{名称}/` |
-| `A` | Alpha 因子 | Alpha 开发 Agent | `src/alpha/alpha-{编号}-{名称}/` |
+| `B` | BUILD 工具 | Build 开发 Agent | `src/skills/skill-{slug}/` |
+| `A` | Alpha 因子 | Alpha 开发 Agent | `src/skills/skill-{slug}/` |
+
+任务编号（`B12`、`A00`）只用于路由与溯源，不进入 skill 目录名。
+
+## Skill 命名与结构
+
+每个任务交付一个自包含的 skill 目录，平铺结构，与已过审 skill `public/skills/skill-dl-gnn-stock-graph` 同构：
+
+```
+skill-{slug}/
+├── SKILL.md              ← 技能设计书
+├── README.md             ← 中文说明（含免责声明）
+├── README.en.md          ← 英文说明
+├── LICENSE               ← 完整 GPL-3.0
+├── INSTALL.md            ← 多平台安装指南
+├── requirements.txt
+├── skill.json
+├── CHANGELOG.md
+├── scripts/
+├── tests/
+└── references/
+```
+
+**不存在 `开发产物/` 与 `生产产物/` 目录，也不存在独立的生产版 SKILL.md。** 结果型 skill 的运行结果写入 `output/`。
+
+详见 `skills/panda-builder/SKILL.md`、`docs/BUILD开发规则V2.md`、`docs/Alpha因子开发规则V2.md`。
 
 ## 项目结构
 
@@ -100,7 +125,7 @@ panda-trading/
 ├── AGENTS.md                       ← 本文件（Agent 声明）
 ├── README.md                       ← 中文项目说明
 ├── README.en.md                    ← 英文项目说明
-├── LICENSE                         ← MIT License
+├── LICENSE                         ← GPL-3.0
 ├── CLAUDE.md                       ← Claude Code 项目规范
 │
 ├── agents/                         ← 多 Agent 协作规范
@@ -115,15 +140,14 @@ panda-trading/
 ├── skills/                         ← 项目本地 Skill
 │   └── panda-builder/              ←   BUILD 脚手架与验收规范
 │
-├── docs/                           ← 生产规则文档
-│   ├── BUILD开发与生产规则V2.md
-│   └── Alpha因子开发与生产规则V2.md
+├── docs/                           ← 开发规则文档
+│   ├── BUILD开发规则V2.md
+│   └── Alpha因子开发规则V2.md
 │
 ├── jobs/                           ← 原始任务需求
 │
-├── src/                            ← 开发产物（所有产出必须放此处）
-│   ├── build/                      ←   BUILD 工具产出
-│   └── alpha/                      ←   Alpha 因子产出（预留）
+├── src/                            ← 开发工作区（所有产出必须放此处）
+│   └── skills/                     ←   每个任务一个 skill-{slug} 目录
 │
 └── public/                         ← 发布工作区（gitignored，不入库）
 ```

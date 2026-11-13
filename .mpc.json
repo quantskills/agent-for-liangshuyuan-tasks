@@ -1,5 +1,8 @@
 {
   "mcpServers": {
+    "pandaData": {
+      "url": "https://pandadatamcp.pandaaiquant.com/mcp"
+    },
     "github": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-github"],

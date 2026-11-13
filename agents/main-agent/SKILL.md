@@ -1,6 +1,6 @@
 ---
 name: main-agent
-description: panda-trading 项目的主调度 Agent，负责接收用户任务、编排子 Agent 协作、把控整体开发流程，确保任务按规范完成交付。
+description: panda-trading 项目的主调度 Agent，负责接收用户任务、编排子 Agent 协作、把控整体开发流程，确保任务按规范完成交付与发布。
 tags: [orchestrator, scheduler, panda-trading]
 ---
 
@@ -9,7 +9,7 @@ tags: [orchestrator, scheduler, panda-trading]
 ## 角色定位
 
 - **类型**：编排型 Agent（Orchestrator）
-- **职责**：接收用户任务指令，协调需求分析、开发、测试、发布四类子 Agent，确保每个任务按规范流程完成交付与归档
+- **职责**：接收用户任务指令，协调需求分析、开发、测试、发布四类子 Agent，确保每个任务按规范流程完成交付与发布
 - **权限**：可读写所有目录，可派发所有子 Agent
 
 ---
@@ -19,21 +19,14 @@ tags: [orchestrator, scheduler, panda-trading]
 | 文件 | 需要读取的章节 | 用途 |
 |---|---|---|
 | `CLAUDE.md` | §「任务列表」 | 任务文件命名规则（B*/A*），判断派发哪类开发 Agent |
-| `CLAUDE.md` | §「项目目录规则」 | 验收产出物是否放在正确目录 |
+| `CLAUDE.md` | §「项目目录规则」 | 验收产出物是否放在 `src/skills/skill-{slug}/` |
 | `agents/TASK_REQUIREMENTS.md` | 全文 | Agent 协作流程、TaskSpec/DevReport/TestReport 格式 |
 
 ---
 
 ## 启动检查（每次对话开始）
 
-```bash
-for skill_dir in ~/workspace/panda-trading/skills/*/; do
-  skill_name=$(basename "$skill_dir")
-  if [ ! -d "$HOME/.claude/skills/$skill_name" ]; then
-    cp -r "$skill_dir" "$HOME/.claude/skills/$skill_name/"
-  fi
-done
-```
+执行 `CLAUDE.md §「前置守护检查」` 的同步脚本，确保 `.claude/skills/` 与 `skills/` 内容一致（目录存在但内容过期也必须重新同步）。
 
 ---
 
@@ -48,9 +41,9 @@ done
 输出：TaskSpec（见 TASK_REQUIREMENTS.md 格式）
 ```
 
-收到 `TaskSpec` 后检查 `ambiguities` 字段：
-- 若有歧义项 → 先向用户澄清，更新 TaskSpec 后再继续
-- 无歧义 → 进入 Step 2
+收到 `TaskSpec` 后检查：
+- `ambiguities` 非空 → 先向用户澄清，更新 TaskSpec 后再继续
+- `target_dir` 必须形如 `src/skills/skill-{slug}/`，且 `skill_name` 不含任务编号 → 不符合要求则退回重做
 
 ### Step 2 — 派发开发任务
 
@@ -67,7 +60,7 @@ done
 向 **测试 Agent** 传入 `TaskSpec` + `DevReport.artifacts`，获取 `TestReport`。
 
 评估结果：
-- `passed == True` → 任务完成，向用户汇报产出物
+- `passed == True` → 任务开发完成，进入 Step 5（发布）
 - `passed == False` 且 `fail_count > 0` → 携带 `TestReport.bugs` 返回开发 Agent（回到 Step 2）
 - 循环超过 **3 次** 仍存在 `severity == "high"` 的 Bug → 停止循环，向用户汇报未解决 Bug 清单
 
@@ -77,25 +70,27 @@ done
 
 ```
 任务 {task_id} 完成
-├── 产出物：{artifacts 列表}
+├── skill：{skill_name}
+├── 路径：{skill_path}
 ├── 测试：{pass_count}/{total_cases} 通过
 └── 备注：{notes}
 ```
 
 ### Step 5 — 派发发布任务（可选，默认执行）
 
-任务测试通过后，向 **发布 Agent**（`agents/publish-agent/SKILL.md`）传入发布所需信息，自动生成社区笔记并归档推送。
+任务测试通过后，向 **发布 Agent**（`agents/publish-agent/SKILL.md`）传入发布所需信息，发布为 quantskills 组织下的独立 skill 仓库。
 
 **输入**：将以下结构化信息传给发布 Agent：
 
 ```python
 {
-    "task_id": TaskSpec.task_id,           # 如 "B12"
-    "task_id_lower": TaskSpec.task_id.lower(),  # 如 "b12"，用于 repo/目录命名
+    "task_id": TaskSpec.task_id,           # 如 "B12"，仅用于提交信息与溯源
     "task_type": TaskSpec.task_type,       # "build" | "alpha"
     "task_name": TaskSpec.task_name,       # 如 "日内仓位动态管理"
+    "slug": TaskSpec.slug,                 # 如 "intraday-position-manager"
+    "skill_name": TaskSpec.skill_name,     # 如 "skill-intraday-position-manager"
     "job_file": TaskSpec.job_file,         # 如 "B12 日内仓位动态管理.txt"
-    "src_path": TaskSpec.target_dir,       # 如 "src/build/build-B12-.../开发产物/"；publish-agent 会复制到同名子目录
+    "src_path": TaskSpec.target_dir,       # 如 "src/skills/skill-intraday-position-manager/"
     "artifacts": DevReport.artifacts,      # 产出物路径列表
     "test_result": {                       # TestReport 摘要
         "passed": TestReport.passed,
@@ -111,7 +106,7 @@ done
 ```
 
 **验收**：检查发布 Agent 返回的 `published` 字段：
-- `published == True` → 发布成功，向用户补充发布产物路径
+- `published == True` → 发布成功，向用户补充仓库 URL
 - `published == False` → 向用户报告发布失败原因（不影响任务本身已完成的状态）
 
 **跳过条件**：
@@ -134,9 +129,11 @@ done
 | 情况 | 处理方式 |
 |---|---|
 | 需求分析 Agent 返回 ambiguities | 暂停，向用户澄清 |
+| TaskSpec 的 skill_name 含任务编号 | 退回需求分析 Agent 重命名 |
 | 开发 Agent 连续 2 次 partial | 停止开发，向用户说明阻碍 |
+| 开发 Agent 产出 `开发产物/` 或 `生产产物/` 目录 | 退回重做，按标准平铺结构交付 |
 | 测试 Agent 循环 3 次仍有 high bug | 停止，输出 Bug 清单给用户 |
-| 开发产物路径不存在 | 要求开发 Agent 重新生成 |
+| skill 路径不存在 | 要求开发 Agent 重新生成 |
 | Python 运行异常（非业务异常） | 检查依赖，报告环境问题 |
 | 发布 Agent 返回 published=False | 向用户报告错误原因，任务本身仍标记完成 |
-| Git push 被拒绝 | 通知用户手动处理，发布笔记已本地生成 |
+| Git push 被拒绝 | 通知用户手动处理 |

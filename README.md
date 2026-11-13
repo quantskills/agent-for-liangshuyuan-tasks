@@ -2,7 +2,7 @@
 
 > 基于 Claude Code 多 Agent 协作框架的量化交易工具库 —— 纯 Python · 零框架依赖 · Skill 架构
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](./LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 
 ---
@@ -11,7 +11,7 @@
 
 **量枢学院（Panda Trading）** 是一个模块化的量化交易工具开发平台，采用 **Skill 原子能力** + **多 Agent 协作** 架构，将交易系统的核心能力拆分为独立的、可复用的 BUILD 工具和 Alpha 因子。
 
-项目采用 **纯 Python 标准库** 实现，不依赖 pandas / numpy 等第三方框架（除非任务需求明确指定），确保每个 Skill 轻量、可独立运行、可被 Agent 或 Alpha 自由调用。
+项目默认采用 **纯 Python 标准库** 实现，不依赖 pandas / numpy 等第三方框架（除非任务需求明确指定），确保每个 Skill 轻量、可独立运行、可被 Agent 或 Alpha 自由调用。
 
 本仓库为 **Agent 型仓库**（`agent-for-liangshuyuan-tasks`），遵循 QuantSkills 社区规则。声明文件见 `AGENTS.md`。
 
@@ -19,7 +19,7 @@
 
 | 理念 | 说明 |
 |---|---|
-| **Skill 即工具** | 每个子目录是一个独立的交易 BUILD skill，可独立运行、独立测试、独立部署 |
+| **Skill 即工具** | 每个子目录是一个独立的交易 skill，可独立运行、独立测试、独立发布 |
 | **BUILD 为 Alpha 服务** | BUILD 是工具层，Alpha 是信号层；Alpha 调用 BUILD，不复制 BUILD 逻辑 |
 | **Agent 协作** | 多 Agent 分工：需求分析 → 开发 → 测试 → 发布，全流程自动化 |
 | **零框架依赖** | 默认纯 Python 标准库实现，确保任意环境可直接运行 |
@@ -37,15 +37,17 @@
 
 ```
 skills/
-└── panda-builder/          ← 脚手架 Skill：创建/验收 BUILD skill 的统一规范
+└── panda-builder/          ← 脚手架 Skill：创建/验收 skill 的统一规范
 ```
 
 ### 任务分类
 
 | 前缀 | 类型 | 目录 | 说明 |
 |---|---|---|---|
-| **B** | BUILD 工具 | `src/build/` | 数据处理、仓位管理、监控预警、复盘分析等 |
-| **A** | Alpha 因子 | `src/alpha/` | 股票/期货 Alpha 信号与因子 |
+| **B** | BUILD 工具 | `src/skills/` | 数据处理、仓位管理、监控预警、复盘分析等 |
+| **A** | Alpha 因子 | `src/skills/` | 股票/期货 Alpha 信号与因子 |
+
+任务编号（如 `B12`、`A00`）只用于任务路由和溯源，**不进入 skill 名称**。所有 skill 统一命名为 `skill-{slug}`。
 
 ### 多 Agent 协作 —— 从任务到发布全自动
 
@@ -64,7 +66,7 @@ jobs/B{编号} {名称}.txt          ← 用户只需写这个
 │  主 Agent   │──── B 类 → Build 开发 Agent + panda-builder
 └──────┬──────┘──── A 类 → Alpha 开发 Agent
        │
-       │ ←── DevReport（产物路径 + 自检报告）
+       │ ←── DevReport（skill 路径 + 自检报告）
        ▼
 ┌─────────────┐
 │  测试 Agent  │  生成用例 → 运行 → TestReport
@@ -72,8 +74,8 @@ jobs/B{编号} {名称}.txt          ← 用户只需写这个
        │ ←── 通过 ✓ / 失败（Bug 回流，最多 3 轮）
        ▼
 ┌─────────────┐
-│  发布 Agent  │  生成中英双语社区笔记 → 创建 GitHub 仓库（skill- 前缀）
-│              │  → Git Submodule 归档 → 推送至 quantskills 组织
+│  发布 Agent  │  创建 GitHub 仓库 skill-{slug} → 复制 skill 产物
+│              │  → 补充合规文件 → 推送至 quantskills 组织
 └──────┬──────┘
        │
        ▼
@@ -83,11 +85,9 @@ jobs/B{编号} {名称}.txt          ← 用户只需写这个
 | Agent | 一句话职责 | 文件 |
 |---|---|---|
 | **需求分析** | 读 `jobs/*.txt`，输出结构化 TaskSpec，标记歧义 | `agents/analyst-agent/SKILL.md` |
-| **Build/Alpha 开发** | 按 TaskSpec 编码，输出可运行的 Python Skill | `agents/dev-{build,alpha}-agent/SKILL.md` |
+| **Build/Alpha 开发** | 按 TaskSpec 编码，输出可运行的 `skill-{slug}` 目录 | `agents/dev-{build,alpha}-agent/SKILL.md` |
 | **测试** | 生成测试用例，验证输入输出，报告 Bug | `agents/test-agent/SKILL.md` |
-| **发布** | 生成中英双语技术笔记，发布至 GitHub + Submodule 归档 | `agents/publish-agent/SKILL.md` |
-
----
+| **发布** | 发布为 quantskills 独立仓库并推送 | `agents/publish-agent/SKILL.md` |
 
 ---
 
@@ -97,7 +97,7 @@ jobs/B{编号} {名称}.txt          ← 用户只需写这个
 panda-trading/
 ├── README.md                       ← 本文件（中文）
 ├── README.en.md                    ← 英文版
-├── LICENSE                         ← MIT License
+├── LICENSE                         ← GPL-3.0
 ├── AGENTS.md                       ← Agent 声明文件（QuantSkills 社区规则）
 ├── CLAUDE.md                       ← Claude Code 项目规范（Agent 协作、Skill 架构、数据接口定义）
 │
@@ -111,45 +111,47 @@ panda-trading/
 │   └── publish-agent/SKILL.md      ←   发布 Agent 规则（遵循 QuantSkills 社区规则）
 │
 ├── skills/                         ← 项目本地 Skill
-│   └── panda-builder/              ←   BUILD 脚手架与验收规范
+│   └── panda-builder/              ←   skill 脚手架与验收规范
 │       ├── SKILL.md
 │       └── skill.json
 │
-├── docs/                           ← 生产规则文档
-│   ├── BUILD开发与生产规则V2.md     ←   BUILD 工具开发全流程规范
-│   └── Alpha因子开发与生产规则V2.md ←   Alpha 因子开发与生产规范
+├── docs/                           ← 开发规则文档
+│   ├── BUILD开发规则V2.md           ←   BUILD 工具开发全流程规范
+│   └── Alpha因子开发规则V2.md       ←   Alpha 因子开发规范
 │
 ├── jobs/                           ← 原始任务需求
 │
-├── public/                         ← 发布归档
-│   ├── community/                  ←   社区技术笔记（中英双语）
-│   │   ├── B11-auto-stop-loss-take-profit.md
-│   │   └── B12-intraday-position-manager.md
-│   └── skills/                     ←   已发布技能的 Git Submodule
-│       ├── skill-b11-auto-stop-loss-take-profit/   ← B11 独立仓库
-│       └── skill-b12-intraday-position-manager/    ← B12 独立仓库
+├── public/                         ← 发布工作区（.gitignore 排除，不入库）
+│   └── skills/
+│       └── skill-dl-gnn-stock-graph/   ← 已过审 skill 参考实现
 │
-└── src/                            ← 开发产物（所有产出必须放此处）
-    ├── build/                      ←   BUILD 工具
-    │   └── build-B12-intraday-position-manager/
-    │       └── 开发产物/
-    │           ├── SKILL.md
-    │           ├── scripts/
-    │           │   ├── build.py        ← 主入口 run() + validate_input()
-    │           │   ├── test.py         ← 自测脚本
-    │           │   ├── common.py       ← 共享常量与工具
-    │           │   ├── classify.py     ← 品种识别
-    │           │   ├── specs.py        ← 合约规格加载
-    │           │   └── markets/        ← 市场模块
-    │           │       ├── a_stock.py
-    │           │       ├── index_future.py
-    │           │       ├── commodity_future.py
-    │           │       └── hk_stock.py
-    │           └── references/
-    │               ├── api_guide.md
-    │               └── contract_specs.json
-    └── alpha/                      ←   Alpha 因子（预留）
+└── src/
+    └── skills/                     ← 开发产物（所有产出必须放此处）
+        └── skill-{slug}/           ←   每个任务一个自包含 skill 目录
 ```
+
+### 单个 skill 的标准结构
+
+```
+skill-{slug}/
+├── SKILL.md              ← 技能设计书（必填）
+├── README.md             ← 中文说明，含 ## ⚠️ 免责声明（必填）
+├── README.en.md          ← 英文说明（必填）
+├── LICENSE               ← 完整 GPL-3.0 文本（必填）
+├── INSTALL.md            ← 多平台安装指南（必填）
+├── requirements.txt      ← Python 依赖声明（必填）
+├── skill.json            ← Skill 元数据（必填）
+├── CHANGELOG.md          ← 版本变更记录（必填）
+├── scripts/              ← 实现代码（必填）
+├── tests/                ← 单元测试（必填）
+├── references/           ← 接口与边界文档（必填）
+└── agents/               ← 运行时适配器（必填）
+    ├── cursor-rule.mdc      ← Cursor
+    ├── portable-loader.md   ← Hermes / OpenClaw
+    └── openai.yaml          ← Codex / OpenClaw
+```
+
+> **本结构没有 `开发产物/`、`生产产物/` 目录，也没有独立的生产版 `SKILL.md`。** 结果型 skill 的运行结果写入 `output/`（`.gitignore` 排除），路径与字段写在同一份 `SKILL.md` 与 `references/` 中。
 
 ---
 
@@ -158,81 +160,96 @@ panda-trading/
 ### 环境要求
 
 - Python 3.8+
-- 无第三方依赖（标准库即可运行）
+- 默认无第三方依赖（标准库即可运行；个别 skill 按 `requirements.txt` 安装）
 
-### 运行已发布的 Skill
+### 运行 skill
 
 ```bash
-# B11 — 自动止盈止损+仓位管理
-cd public/skills/skill-b11-auto-stop-loss-take-profit/scripts
-python3 build.py && python3 test.py
-
-# B12 — 日内仓位动态管理
-cd public/skills/skill-b12-intraday-position-manager/scripts
-python3 build.py && python3 test.py
+# 在 skill 目录内
+cd src/skills/skill-{slug}
+python3 scripts/build.py
+python3 -m pytest tests/ -v
 ```
 
 ### 安装到 Claude Code
 
 ```bash
-cp -r public/skills/skill-b12-intraday-position-manager ~/.claude/skills/
-# 然后在 Claude Code 中调用：/skill-b12-intraday-position-manager
+cp -R src/skills/skill-{slug} ~/.claude/skills/
+# 然后在 Claude Code 中调用：/skill-{slug}
 ```
 
 ### 作为模块调用
 
 ```python
 import sys
-sys.path.insert(0, "public/skills/skill-b12-intraday-position-manager/scripts")
-from build import run
+sys.path.insert(0, "src/skills/skill-{slug}")
+from scripts.build import run
 
-# 单条
 order = run({
     "code": "600036", "pnl_pct": 0.015,
     "sellable_qty": 800, "locked_qty": 0,
     "price": 10.0, "available_cash": 100000, "time": "10:00",
 })
 
-# 批量
-orders = run([...])   # 传入 list 即可
+orders = run([...])   # 批量：传入 list
 ```
 
 ---
 
 ## 📐 开发规范
 
-### BUILD Skill 目录结构（panda-builder 规范）
+### skill 命名
 
-```
-build-{编号}-{名称}/
-├── 开发产物/
-│   ├── SKILL.md                   ← 功能说明书（必填）
-│   ├── scripts/
-│   │   ├── build.py               ← 主脚本，必须含 run() + validate_input()
-│   │   └── test.py                ← 测试脚本（必填）
-│   ├── references/
-│   │   └── api_guide.md           ← 数据接口说明（必填）
-│   └── demo.mp4                   ← 跑通视频（必填）
-└── 生产产物/                      ← 结果型 BUILD 需要
-    ├── SKILL.md
-    └── 数据库.parquet
+| 元素 | 规则 | 示例 |
+|---|---|---|
+| 目录名 | `skill-{slug}` | `skill-intraday-position-manager` |
+| slug | 中文名转英文，小写 + 连字符，3–6 词 | `auto-stop-loss-take-profit` |
+| `SKILL.md` 的 `name` | 与目录名完全一致 | `skill-intraday-position-manager` |
+
+**禁止**使用 `build-{编号}`、`build-B12-*`、`alpha-A00-*` 等带任务编号的命名。
+
+### 代码接口
+
+`scripts/build.py` 必须提供：
+
+```python
+def run(input_data, config=None): ...
+def validate_input(input_data): ...   # 缺字段/空数据/类型错误必须抛异常
 ```
 
 ### 发布规范（QuantSkills 社区规则）
 
-开发产物通过发布 Agent 发布时，自动转换为社区合规的独立仓库：
+社区审核硬性要求：
+
+| 规则 | 要求 |
+|---|---|
+| `english-readme` | 必须有 `README.en.md`，`README.md` 保持中文优先 |
+| `license` | 必须有 `LICENSE`（GPLv3 全文），元数据声明 `GPL-3.0-only` |
+| `repository-name` | 仓库名全小写，`skill-` 或 `agent-` 前缀 |
+| `runtime-adapter` | 必须有 `agents/cursor-rule.mdc`、`agents/portable-loader.md`、`agents/openai.yaml` |
+
+说明文档不得包含敏感信息、收益承诺、投资建议或未经确认的官方背书。详见 `skills/panda-builder/SKILL.md` §8。
+
+
+发布后的仓库与 `public/skills/skill-dl-gnn-stock-graph` 完全同构：
 
 ```
-skill-{编号}-{名称}/               ← GitHub 独立仓库（skill- 前缀）
-├── SKILL.md                       ← 根层级声明文件（含 metadata 块）
-├── README.md                      ← 中文交付文档（含免责声明）
-├── README.en.md                   ← 英文交付文档
-├── LICENSE                        ← GPL-3.0
-├── INSTALL.md                     ← 多平台安装指南（Codex/Cursor/Hermes/OpenClaw/Claude Code）
-├── requirements.txt               ← Python 依赖声明
-├── scripts/                       ← 开发产物
-├── references/                    ← 参考文档
-└── production/                    ← 生产产物（结果型/混合型）
+skill-{slug}/                    ← GitHub 独立仓库
+├── SKILL.md                     ← 根层级声明（frontmatter name 与仓库名一致）
+├── README.md                    ← 中文交付文档（含免责声明）
+├── README.en.md                 ← 英文交付文档
+├── LICENSE                      ← 完整 GPL-3.0
+├── INSTALL.md                   ← 多平台安装指南（Claude Code/Codex/Cursor/Hermes/OpenClaw）
+├── requirements.txt
+├── skill.json
+├── CHANGELOG.md
+├── .gitignore                   ← 排除 output/ 等运行产物
+├── .github/workflows/validate.yml  ← CI：pytest
+├── scripts/
+├── tests/
+├── references/
+├── agents/                      ← 运行时适配器（必填）：cursor-rule.mdc / portable-loader.md / openai.yaml
+└── config/                      ← （可选）集中式参数
 ```
 
 ### 调仓指令标准数据结构
@@ -264,4 +281,4 @@ skill-{编号}-{名称}/               ← GitHub 独立仓库（skill- 前缀�
 
 本项目以 GPL-3.0 License 开源。Copyright (C) 2026 QuantSkills.
 
-> 已发布的 Skill 子仓库（`skill-b11-*`、`skill-b12-*`）使用 GPL-3.0，遵循 QuantSkills 社区规则。
+> 所有已发布 skill 独立仓库同样使用 GPL-3.0，遵循 QuantSkills 社区规则。

@@ -15,7 +15,7 @@
 | Build 开发 Agent | `agents/dev-build-agent/` | 开发 BUILD 类工具，运行 panda-builder skill |
 | Alpha 开发 Agent | `agents/dev-alpha-agent/` | 开发 Alpha 信号与因子 |
 | 测试 Agent | `agents/test-agent/` | 生成测试用例与测试报告，无代码修改权限 |
-| 发布 Agent | `agents/publish-agent/` | 任务通过后生成社区笔记、归档技能、推送 GitHub |
+| 发布 Agent | `agents/publish-agent/` | 任务通过后发布为 quantskills 独立 skill 仓库 |
 
 ---
 
@@ -43,12 +43,12 @@
 ┌────────────────────────────────────┐
 │  开发 Agent (Build 或 Alpha)       │──── 运行对应 Skill + Python 验证
 └──────┬─────────────────────────────┘
-       │ 4. 返回开发产物路径 + 自检报告
+       │ 4. 返回 skill 路径 + 自检报告
        ▼
 ┌─────────────┐
 │  主 Agent   │──── 派发测试任务
 └──────┬──────┘
-       │ 5. 派发测试任务 + 开发产物路径
+       │ 5. 派发测试任务 + skill 路径
        ▼
 ┌───────────────┐
 │  测试 Agent   │──── 生成测试用例 + 运行 + 输出报告
@@ -62,8 +62,9 @@
        │ 7. 携带 TestReport 重新派发        ┌──────────────────┐
        │    开发 Agent                      │   发布 Agent      │
        └──→ 回到步骤 3，最多循环 3 次       └──────┬───────────┘
-              超过 3 次仍失败 → 上报给用户         │ 9. 生成笔记 +
-                                                  │    归档技能 +
+              超过 3 次仍失败 → 上报给用户         │ 9. 创建独立仓库 +
+                                                  │    复制 skill 产物 +
+                                                  │    补充合规文件 +
                                                   │    Git 推送
                                                   ▼
                                             发布完成 ✓
@@ -81,7 +82,9 @@
     "task_id": "B12",                         # 任务编号
     "task_type": "build",                     # "build" | "alpha"
     "task_name": "日内仓位动态管理",           # 任务名称
-    "target_dir": "src/build/build-B12-intraday-position-manager/开发产物/",  # 输出目录
+    "slug": "intraday-position-manager",      # 英文 slug（小写+连字符，3–6 词）
+    "skill_name": "skill-intraday-position-manager",  # "skill-" + slug
+    "target_dir": "src/skills/skill-intraday-position-manager/",  # 输出目录
     "summary": "...",                         # 一句话描述
     "inputs": [                               # 输入字段列表
         {"field": "code", "type": "str", "desc": "股票代码"},
@@ -104,18 +107,21 @@
 {
     "task_id": "B12",
     "status": "success",          # "success" | "partial" | "failed"
+    "skill_name": "skill-intraday-position-manager",
+    "skill_path": "src/skills/skill-intraday-position-manager/",
     "artifacts": [                # 产出物路径列表
-        "src/build/build-B12-intraday-position-manager/开发产物/scripts/build.py",
-        "src/build/build-B12-intraday-position-manager/开发产物/scripts/test.py",
-        "src/build/build-B12-intraday-position-manager/开发产物/SKILL.md",
+        "src/skills/skill-intraday-position-manager/scripts/build.py",
+        "src/skills/skill-intraday-position-manager/tests/selfcheck.py",
+        "src/skills/skill-intraday-position-manager/SKILL.md",
     ],
-    "run_output": "...",          # python3 build.py 的实际输出
+    "run_output": "...",          # python3 scripts/build.py 的实际输出
     "checklist": {                # panda-builder 验收清单
+        "naming": True,
+        "eight_files": True,
         "run_ok": True,
         "run_entry": True,
         "validate_input": True,
-        "skill_md": True,
-        "test_py": True,
+        "tests_pass": True,
     },
     "notes": "..."                # 备注（如待澄清项的处理方式）
 }
@@ -169,8 +175,7 @@
 | 能力 | 主 Agent | 需求分析 Agent | Build 开发 Agent | Alpha 开发 Agent | 测试 Agent | 发布 Agent |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
 | 读取 jobs/*.txt | ✓ | ✓ | ✗ | ✗ | ✗ | ✓ |
-| 写入 src/build/ | ✓ | ✗ | ✓ | ✗ | ✗ | ✗ |
-| 写入 src/alpha/ | ✓ | ✗ | ✗ | ✓ | ✗ | ✗ |
+| 写入 src/skills/ | ✓ | ✗ | ✓ | ✓ | ✗ | ✗ |
 | 写入 public/ | ✓ | ✗ | ✗ | ✗ | ✗ | ✓ |
 | 运行 Python 脚本 | ✓ | ✗ | ✓ | ✓ | ✓（只读运行）| ✗ |
 | 修改已有代码 | ✓ | ✗ | ✓ | ✓ | ✗ | ✗ |
@@ -189,9 +194,9 @@
 - [x] Alpha 任务（A 前缀）完整开发流程
 - [x] 需求不清晰时的歧义上报机制（`ambiguities` 字段）
 - [x] 测试失败后的迭代修复（最多 3 轮）
-- [x] 验收检查清单（panda-builder 6 项）
+- [x] 验收检查清单（panda-builder 命名/八件套/运行/测试）
 - [x] 权限隔离（测试 Agent 无法修改代码）
-- [x] 发布归档（测试通过后自动生成社区笔记 + 技能归档 + Git 推送）
+- [x] 发布为独立 skill 仓库（创建 GitHub 仓库 + 复制产物 + 补充合规文件 + Git 推送）
 
 ### 边界规则
 

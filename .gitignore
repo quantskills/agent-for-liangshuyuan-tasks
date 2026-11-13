@@ -1,11 +1,17 @@
 __pycache__/
 *.pyc
-*/.DS_Store
+.pytest_cache/
+.DS_Store
 
 .idea/
 */.idea
 .claude/settings.local.json
+.claude/skills/
+public/.claude/
 .gitmodules
 
+# 开发与发布工作区，以及 skill 产物：仅在本地存在，不入库
+src/skills/*
 public/skills/*
 public/community/*
+public/skills_demo/*

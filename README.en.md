@@ -2,7 +2,7 @@
 
 > A modular quantitative trading tool library powered by Claude Code Multi-Agent Collaboration — Pure Python · Zero Framework Dependencies · Skill Architecture
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](./LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 
 ---
@@ -11,7 +11,7 @@
 
 **Panda Trading (量枢学院)** is a modular quantitative trading development platform that uses an **Atomic Skill** + **Multi-Agent Collaboration** architecture to decompose core trading capabilities into independent, reusable BUILD tools and Alpha factors.
 
-The project is built with the **Python standard library only** — no pandas, numpy, or other third-party dependencies (unless explicitly required by a task), ensuring every Skill is lightweight, self-contained, and freely callable by agents or Alpha signals.
+The project uses the **Python standard library by default** — no pandas, numpy, or other third-party dependencies unless a task explicitly requires them — ensuring every skill is lightweight, self-contained, and freely callable by agents or Alpha signals.
 
 This is an **Agent-type repository** (`agent-for-liangshuyuan-tasks`), compliant with QuantSkills community rules. See `AGENTS.md` for the agent declaration.
 
@@ -19,7 +19,7 @@ This is an **Agent-type repository** (`agent-for-liangshuyuan-tasks`), compliant
 
 | Principle | Description |
 |---|---|
-| **Skills are Tools** | Each subdirectory is an independent trading BUILD skill — runnable, testable, and deployable in isolation |
+| **Skills are Tools** | Each subdirectory is an independent trading skill — runnable, testable, and releasable in isolation |
 | **BUILD Serves Alpha** | BUILD is the tool layer; Alpha is the signal layer. Alpha calls BUILD, never duplicates its logic |
 | **Agent Collaboration** | Multi-agent pipeline: analysis → development → testing → publishing, fully automated |
 | **Zero Dependencies** | Pure Python standard library by default — runs anywhere without setup |
@@ -37,8 +37,10 @@ This is an **Agent-type repository** (`agent-for-liangshuyuan-tasks`), compliant
 
 | Prefix | Type | Directory | Description |
 |---|---|---|---|
-| **B** | BUILD Tool | `src/build/` | Data processing, position management, monitoring, review analysis |
-| **A** | Alpha Factor | `src/alpha/` | Stock & futures Alpha signals and factors |
+| **B** | BUILD Tool | `src/skills/` | Data processing, position management, monitoring, review analysis |
+| **A** | Alpha Factor | `src/skills/` | Stock & futures Alpha signals and factors |
+
+Task IDs (e.g. `B12`, `A00`) are used only for routing and traceability — they never appear in skill names. Every skill is named `skill-{slug}`.
 
 ### Multi-Agent Collaboration
 
@@ -57,7 +59,7 @@ jobs/B{id} {name}.txt
 │  Main Agent  │── B-type → Build Dev Agent + panda-builder
 └──────┬──────┘── A-type → Alpha Dev Agent
        │
-       │ ←── DevReport (artifacts + self-check)
+       │ ←── DevReport (skill path + self-check)
        ▼
 ┌─────────────┐
 │  Test Agent  │  Generates cases → runs → TestReport
@@ -65,8 +67,8 @@ jobs/B{id} {name}.txt
        │ ←── Pass ✓ / Fail (bugs rebound, max 3 iterations)
        ▼
 ┌─────────────┐
-│ Publish Agent│  Bilingual community notes → GitHub repo (skill- prefix)
-│              │  → Git Submodule → push to quantskills org
+│ Publish Agent│  Create GitHub repo skill-{slug} → copy skill artifacts
+│              │  → add compliance files → push to quantskills org
 └──────┬──────┘
        │
        ▼
@@ -76,11 +78,9 @@ jobs/B{id} {name}.txt
 | Agent | Responsibility | Spec |
 |---|---|---|
 | **Analyst** | Reads `jobs/*.txt`, outputs TaskSpec | `agents/analyst-agent/SKILL.md` |
-| **Build/Alpha Dev** | Codes to TaskSpec, outputs Python Skill | `agents/dev-{build,alpha}-agent/SKILL.md` |
+| **Build/Alpha Dev** | Codes to TaskSpec, outputs a `skill-{slug}` directory | `agents/dev-{build,alpha}-agent/SKILL.md` |
 | **Test** | Generates test cases, validates I/O, reports bugs | `agents/test-agent/SKILL.md` |
-| **Publish** | Bilingual notes, GitHub repo (skill- prefix), Submodule archive | `agents/publish-agent/SKILL.md` |
-
----
+| **Publish** | Publishes as a standalone quantskills repo | `agents/publish-agent/SKILL.md` |
 
 ---
 
@@ -90,7 +90,7 @@ jobs/B{id} {name}.txt
 panda-trading/
 ├── README.md                       ← Chinese README
 ├── README.en.md                    ← English README (this file)
-├── LICENSE                         ← MIT License
+├── LICENSE                         ← GPL-3.0
 ├── AGENTS.md                       ← Agent declaration (QuantSkills community rules)
 ├── CLAUDE.md                       ← Claude Code project spec
 │
@@ -101,27 +101,48 @@ panda-trading/
 │   ├── dev-build-agent/SKILL.md
 │   ├── dev-alpha-agent/SKILL.md
 │   ├── test-agent/SKILL.md
-│   └── publish-agent/SKILL.md      ←   Publish Agent (QuantSkills-compliant)
+│   └── publish-agent/SKILL.md
 │
 ├── skills/                         ← Local project skills
-│   └── panda-builder/
+│   └── panda-builder/              ← Skill scaffold & acceptance rules
 │
-├── docs/                           ← Production rule docs
+├── docs/                           ← Development rule documents
+│   ├── BUILD开发规则V2.md
+│   └── Alpha因子开发规则V2.md
 │
 ├── jobs/                           ← Raw task requirements
 │
-├── public/                         ← Published archive
-│   ├── community/                  ←   Community notes (bilingual)
-│   └── skills/                     ←   Published skills (Git Submodule)
-│       ├── skill-b11-auto-stop-loss-take-profit/
-│       └── skill-b12-intraday-position-manager/
+├── public/                         ← Publish workspace (gitignored, not committed)
+│   └── skills/
+│       └── skill-dl-gnn-stock-graph/   ← Reference: approved skill
 │
-└── src/                            ← Development artifacts
-    ├── build/
-    │   └── build-B12-intraday-position-manager/
-    │       └── 开发产物/
-    └── alpha/                      ← (reserved)
+└── src/
+    └── skills/                     ← Development artifacts (all outputs live here)
+        └── skill-{slug}/           ←   One self-contained skill per task
 ```
+
+### Standard skill layout
+
+```
+skill-{slug}/
+├── SKILL.md              ← Skill specification (required)
+├── README.md             ← Chinese docs with ## ⚠️ 免责声明 (required)
+├── README.en.md          ← English docs (required)
+├── LICENSE               ← Full GPL-3.0 text (required)
+├── INSTALL.md            ← Multi-platform install guide (required)
+├── requirements.txt      ← Python dependencies (required)
+├── skill.json            ← Skill metadata (required)
+├── CHANGELOG.md          ← Version history (required)
+├── scripts/              ← Implementation (required)
+├── tests/                ← Unit tests (required)
+├── references/           ← API & boundary docs (required)
+└── agents/               ← Runtime adapters (required)
+    ├── cursor-rule.mdc      ← Cursor
+    ├── portable-loader.md   ← Hermes / OpenClaw
+    └── openai.yaml          ← Codex / OpenClaw
+```
+
+> **There is no `开发产物/` or `生产产物/` directory, and no separate production SKILL.md.** Result-producing skills write to `output/` (gitignored); paths and fields are documented in the same `SKILL.md` and `references/`.
 
 ---
 
@@ -130,66 +151,98 @@ panda-trading/
 ### Requirements
 
 - Python 3.8+
-- No third-party dependencies (stdlib only)
+- No third-party dependencies by default (standard library is enough; some skills declare extras in `requirements.txt`)
 
-### Run Published Skills
+### Run a skill
 
 ```bash
-# B11 — Auto Stop-Loss / Take-Profit + Position Sizing
-cd public/skills/skill-b11-auto-stop-loss-take-profit/scripts
-python3 build.py && python3 test.py
-
-# B12 — Intraday Position Manager
-cd public/skills/skill-b12-intraday-position-manager/scripts
-python3 build.py && python3 test.py
+cd src/skills/skill-{slug}
+python3 scripts/build.py
+python3 -m pytest tests/ -v
 ```
 
-### Install to Claude Code
+### Install into Claude Code
 
 ```bash
-cp -r public/skills/skill-b12-intraday-position-manager ~/.claude/skills/
-# Invoke: /skill-b12-intraday-position-manager
+cp -R src/skills/skill-{slug} ~/.claude/skills/
+# Then invoke: /skill-{slug}
+```
+
+### Use as a module
+
+```python
+import sys
+sys.path.insert(0, "src/skills/skill-{slug}")
+from scripts.build import run
+
+order = run({
+    "code": "600036", "pnl_pct": 0.015,
+    "sellable_qty": 800, "locked_qty": 0,
+    "price": 10.0, "available_cash": 100000, "time": "10:00",
+})
+
+orders = run([...])   # Batch: pass a list
 ```
 
 ---
 
-## 📐 Development Standards
+## 📐 Development Rules
 
-### BUILD Skill Directory Structure (panda-builder)
+### Naming
+
+| Element | Rule | Example |
+|---|---|---|
+| Directory | `skill-{slug}` | `skill-intraday-position-manager` |
+| slug | Chinese name → English, lowercase + hyphens, 3–6 words | `auto-stop-loss-take-profit` |
+| `SKILL.md` `name` | Must match the directory name exactly | `skill-intraday-position-manager` |
+
+**Forbidden**: `build-{id}`, `build-B12-*`, `alpha-A00-*`, or any task ID in the directory name.
+
+### Code interface
+
+`scripts/build.py` must provide:
+
+```python
+def run(input_data, config=None): ...
+def validate_input(input_data): ...   # must raise on missing/empty/invalid input
+```
+
+### Publishing rules (QuantSkills community)
+
+Hard requirements enforced by the community audit:
+
+| Rule | Requirement |
+|---|---|
+| `english-readme` | `README.en.md` must exist; `README.md` stays Chinese-first |
+| `license` | `LICENSE` must contain the full GPLv3 text and metadata must declare `GPL-3.0-only` |
+| `repository-name` | Lowercase repo name with a `skill-` or `agent-` prefix |
+| `runtime-adapter` | `agents/cursor-rule.mdc`, `agents/portable-loader.md`, `agents/openai.yaml` must all exist |
+
+Docs must not contain sensitive information, return guarantees, investment advice, or unconfirmed official endorsements. See `skills/panda-builder/SKILL.md` §8.
+
+
+A published repo is identical in shape to `public/skills/skill-dl-gnn-stock-graph`:
 
 ```
-build-{id}-{name}/
-├── 开发产物/                     ← Development artifacts
-│   ├── SKILL.md
-│   ├── scripts/
-│   │   ├── build.py               ← run() + validate_input()
-│   │   └── test.py
-│   ├── references/
-│   │   └── api_guide.md
-│   └── demo.mp4
-└── 生产产物/                      ← Production (result-type only)
-    ├── SKILL.md
-    └── 数据库.parquet
-```
-
-### Publish Standard (QuantSkills Community Rules)
-
-Published skills are transformed into standalone repos:
-
-```
-skill-{id}-{name}/                ← GitHub repo (skill- prefix)
-├── SKILL.md                       ← Root-level declaration (with metadata block)
-├── README.md                      ← Chinese README (with disclaimer)
-├── README.en.md                   ← English README
-├── LICENSE                        ← GPL-3.0
-├── INSTALL.md                     ← Multi-platform guide (Codex/Cursor/Hermes/OpenClaw/Claude Code)
+skill-{slug}/                    ← standalone GitHub repo
+├── SKILL.md                     ← Root declaration (frontmatter name matches repo name)
+├── README.md                    ← Chinese delivery docs (with disclaimer)
+├── README.en.md                 ← English delivery docs
+├── LICENSE                      ← Full GPL-3.0
+├── INSTALL.md                   ← Multi-platform guide (Claude Code/Codex/Cursor/Hermes/OpenClaw)
 ├── requirements.txt
+├── skill.json
+├── CHANGELOG.md
+├── .gitignore                   ← excludes output/ and other runtime artifacts
+├── .github/workflows/validate.yml  ← CI: pytest
 ├── scripts/
+├── tests/
 ├── references/
-└── production/                    ← (result-type/hybrid only)
+├── agents/                      ← runtime adapters (required): cursor-rule.mdc / portable-loader.md / openai.yaml
+└── config/                      ← (optional) centralized parameters
 ```
 
-### Standard Order Format
+### Standard order format
 
 ```python
 {
@@ -204,6 +257,12 @@ skill-{id}-{name}/                ← GitHub repo (skill- prefix)
 }
 ```
 
+### A-share trading constraints
+
+- Minimum lot size 100 shares; add/reduce quantities round down to multiples of 100
+- Market close 15:00; default force-close window is the last 15 minutes (14:45)
+- T+1: positions opened today are locked and cannot be sold the same day
+
 ---
 
 ## 📄 License
@@ -212,4 +271,4 @@ skill-{id}-{name}/                ← GitHub repo (skill- prefix)
 
 This project is open-sourced under the GPL-3.0 License. Copyright (C) 2026 QuantSkills.
 
-> Published Skill sub-repos (`skill-b11-*`, `skill-b12-*`) use GPL-3.0, per QuantSkills community rules.
+> All published standalone skill repos also use GPL-3.0, per QuantSkills community rules.
