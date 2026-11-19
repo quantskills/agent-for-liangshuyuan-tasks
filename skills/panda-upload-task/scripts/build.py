@@ -32,6 +32,8 @@ DEFAULT_CONFIG = {
     "statuses": ["IN_PROGRESS", "PENDING"],         # 创作中 / 待创作
     "mode": "draft",                                # draft | submit
     "dry_run": True,
+    "write_channel": "ui",                          # ui | api（api 通道字段未经线上实测，默认 ui）
+    "claim_ttl_min": 30,
     "project_root": os.getcwd(),
     "public_dir": "public/skills",
     "dist_dir": "public/dist",
@@ -153,8 +155,8 @@ def filter_tasks(tasks, statuses):
     return targets, skipped
 
 
-def match_task_to_skill(task, aliases, existing_slugs):
-    """三级匹配。返回 (slug|None, how, reason)。歧义一律 unmatched，禁止猜。"""
+def match_task_to_skill(task, aliases, existing_slugs, source_map=None):
+    """四级匹配。返回 (slug|None, how, reason)。歧义一律 unmatched，禁止猜。"""
     title = task["title"]
     num_map = aliases.get("task_numbers", {})
     kw_map = aliases.get("keywords", {})
@@ -164,6 +166,13 @@ def match_task_to_skill(task, aliases, existing_slugs):
         if slug in existing_slugs:
             return slug, "task_number", ""
         return None, "task_number", f"映射目标 {slug} 不在 public/skills"
+
+    hits = {s for s, toks in (source_map or {}).items()
+            if task["task_number"] in toks and s in existing_slugs}
+    if len(hits) == 1:
+        return hits.pop(), "source_task", ""
+    if len(hits) > 1:
+        return None, "source_task", f"source_task 反查命中多个: {sorted(hits)}"
 
     for m in re.finditer(r"[（(]([A-Za-z0-9][A-Za-z0-9_-]{2,})[）)]", title):
         cand = "skill-" + m.group(1).lower()
@@ -376,7 +385,20 @@ def api_get(cfg, path):
     """
     js = "(() => fetch('%s', {credentials:'include'}).then(r => r.text()))()" % path
     raw = cli(cfg, "eval", js)
-    body = raw if isinstance(raw, (dict, str)) else None
+    return api_result(raw)
+
+
+def api_post(cfg, path, payload=None):
+    """同源 POST（写通道 API 化用；body 字段形状未经线上实测，调用方必须准备 UI 兜底）。"""
+    js = ("(() => fetch('%s', {method:'POST', credentials:'include', "
+          "headers:{'Content-Type':'application/json'}, body:%s}).then(r=>r.text()))()"
+          % (path, json.dumps(json.dumps(payload or {}, ensure_ascii=False))))
+    return api_result(cli(cfg, "eval", js))
+
+
+def api_result(raw):
+    """api_get/api_post 共用解包（先 envelope，后平台 ok/data）。"""
+    body = raw
     if isinstance(body, str):
         try:
             body = json.loads(body)
@@ -384,11 +406,58 @@ def api_get(cfg, path):
             raise CliError("api_error", f"非 JSON 响应: {str(raw)[:160]} ({e})")
     if not isinstance(body, dict):
         raise CliError("api_error", f"无法解析响应: {str(raw)[:160]}")
-    if "ok" in body:                      # 平台自身 envelope
+    if "ok" in body:
         if not body["ok"]:
             raise CliError("api_error", f"平台返回 ok=false: {str(body)[:200]}")
         return body.get("data")
     return body
+
+
+# ---------------------------------------------------------------- 并行认领锁（用户规则：串行化）
+
+def _claim_path(cfg):
+    return os.path.join(cfg["project_root"], ".work-claim")
+
+
+def _claim_expired(claim, ttl_min):
+    try:
+        at = datetime.datetime.fromisoformat(claim.get("at", ""))
+    except (ValueError, TypeError):
+        return True
+    return (datetime.datetime.now() - at) > datetime.timedelta(minutes=ttl_min)
+
+
+def claim_work(cfg, activity):
+    """原子化认领 .work-claim；他人未过期 -> 拒绝。返回认领人标识。"""
+    who = cfg["session"]
+    path = _claim_path(cfg)
+    cur = None
+    try:
+        with open(path) as f:
+            cur = json.load(f)
+    except (OSError, ValueError):
+        cur = None  # 不存在/损坏/不可读：允许重新占用
+    if isinstance(cur, dict) and cur.get("who") and cur.get("who") != who \
+            and not _claim_expired(cur, cfg["claim_ttl_min"]):
+        raise UploadTaskError(
+            "工作区被 %s 占用（activity=%s, at=%s）；请先协调或等待 %d 分钟 TTL 过期"
+            % (cur.get("who"), cur.get("activity"), cur.get("at"), cfg["claim_ttl_min"]))
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump({"who": who, "activity": activity,
+                   "at": datetime.datetime.now().isoformat(timespec="seconds")}, f, ensure_ascii=False)
+    os.replace(tmp, path)
+    return who
+
+
+def release_claim(cfg):
+    try:
+        with open(_claim_path(cfg)) as f:
+            cur = json.load(f)
+        if cur.get("who") == cfg["session"]:
+            os.remove(_claim_path(cfg))
+    except (OSError, ValueError):
+        pass
 
 
 def ensure_visible(cfg):
@@ -412,6 +481,45 @@ def list_public_skill_dirs(cfg):
         return set(), root
     return {d for d in os.listdir(root)
             if d.startswith("skill-") and os.path.isfile(os.path.join(root, d, "skill.json"))}, root
+
+
+def version_drift(cfg, pub, ref, version):
+    """版本单源校验（skill.json 为准）：CHANGELOG 首条 / openai.yaml 漂移则列出。"""
+    drift = []
+    try:
+        chlog = git(cfg, pub, "show", f"{ref}:CHANGELOG.md")
+        m = re.search(r"^## \[(\d+\.\d+\.\d+)\]", chlog, re.M)
+        if m and m.group(1) != version:
+            drift.append("CHANGELOG 当前条目=%s" % m.group(1))
+    except CliError:
+        pass
+    try:
+        oy = git(cfg, pub, "show", f"{ref}:agents/openai.yaml")
+        m = re.search(r"^\s*version:\s*[\"']?(\d+\.\d+\.\d+)", oy, re.M)
+        if m and m.group(1) != version:
+            drift.append("openai.yaml=%s" % m.group(1))
+    except CliError:
+        pass
+    return drift
+
+
+def scan_source_tasks(cfg, slugs):
+    """匹配靠数据：从各 skill HEAD skill.json 的 source_task 提取平台任务编号 token。"""
+    out = {}
+    for slug in slugs:
+        pub = os.path.join(cfg["project_root"], cfg["public_dir"], slug)
+        try:
+            sj = json.loads(git(cfg, pub, "show", "HEAD:skill.json"))
+        except (CliError, ValueError, OSError):
+            continue
+        st = sj.get("source_task")
+        vals = st if isinstance(st, list) else [st] if isinstance(st, str) else []
+        toks = set()
+        for v in vals:
+            toks.update(re.findall(r"\bTS[\w-]+\b|\b[A-Z]{2,}-[\w-]+\b|\bB\d{1,3}\b", v or ""))
+        if toks:
+            out[slug] = toks
+    return out
 
 
 def resolve_skill_resources(cfg, slug):
@@ -445,6 +553,11 @@ def resolve_skill_resources(cfg, slug):
         dist_files = []
     version = pick_upload_version(dist_files, slug, head_version, remote_tag_versions)
     ref = "HEAD" if version == head_version else "v" + version
+    drift = version_drift(cfg, pub, ref, version)
+    if drift:
+        raise Blocked(slug, "版本漂移（skill.json 唯一真源，HEAD 版 %s）：%s；"
+                            "先跑 skills/panda-builder/scripts/validate_skill.py 定位，修正后重新发布"
+                            % (version, "; ".join(drift)))
     try:
         readme = git(cfg, pub, "show", f"{ref}:README.md")
     except CliError:
@@ -609,6 +722,44 @@ def _reread(cfg, css, ref, expected, prefix=False):
 
 
 def execute_upload(cfg, task, res):
+    """写通道分发：ui（默认，已线上验证）；api（端点自 bundle 提取，body 形状未实测，
+    任何失败自动回退 UI）。"""
+    if cfg.get("write_channel") == "api":
+        try:
+            return execute_upload_api(cfg, task, res)
+        except (CliError, UploadTaskError) as e:
+            out = _execute_upload_ui(cfg, task, res)
+            out["fallback_reason"] = "api channel failed: %s" % e
+            return out
+    return _execute_upload_ui(cfg, task, res)
+
+
+def execute_upload_api(cfg, task, res):
+    """API 写通道：/start + /submissions（含附件则交由上层回退 UI——multipart 形状未知）。
+
+    端点：POST /api/v1/tasks/{id}/start、POST /api/v1/tasks/{id}/submissions
+    状态常量（bundle 实测）：DRAFT / PENDING_REVIEW / WITHDRAWN。
+    """
+    api = cfg["api_base"]
+    d = api_get(cfg, f"{api}/tasks/{task['id']}")
+    status = (d or {}).get("status", task["status"]) if isinstance(d, dict) else task["status"]
+    if status == "PENDING":
+        api_post(cfg, f"{api}/tasks/{task['id']}/start")
+    # multipart 上传与 attachments 列表端点未实测：附件一致性无法经 API 核验，
+    # 默认拒绝并回退 UI；纯文本更新场景需显式 api_text_only=True 承担风险。
+    if not cfg.get("api_text_only"):
+        raise CliError("api_attachment_gap", "zip 附件 multipart 未实测，API 通道暂不承接带附件提交")
+    action = "draft" if cfg["mode"] == "draft" else "submit"
+    api_post(cfg, f"{api}/tasks/{task['id']}/submissions",
+             {"summary": res["feature"], "link": res["github_url"], "action": action})
+    final = api_get(cfg, f"{api}/tasks/{task['id']}")
+    return {"action": "draft_saved" if cfg["mode"] == "draft" else "submitted_for_review",
+            "status_after": (final or {}).get("status", ""), "verified": True,
+            "attachments": {"uploaded": False, "kept": os.path.basename(res["zip_path"]),
+                            "removed": [], "via": "api_text_only"}}
+
+
+def _execute_upload_ui(cfg, task, res):
     """驱动详情页表单。失败抛 CliError，由上层记录该任务错误后继续下一条。"""
     base = cfg["base_app_url"]
     cli(cfg, "open", f"{base}/tasks/{task['id']}")
@@ -701,8 +852,18 @@ def run(input_data=None, config=None):
     report["skipped"] = [{"task_number": t["task_number"], "title": t["title"], "status": t["status"]}
                          for t in skipped]
 
-    # 3. skill 目录索引
+    # 3. skill 目录索引 + source_task 反查表（匹配靠数据）
     slugs, root = list_public_skill_dirs(cfg)
+    source_map = {}
+    try:
+        source_map = scan_source_tasks(cfg, slugs)
+    except Exception:
+        pass
+
+    # 执行模式先认领工作锁（并行串行化）
+    if not cfg["dry_run"] and slugs:
+        claim_work(cfg, "platform-upload:%s" % cfg["mode"])
+        report["claim"] = cfg["session"]
 
     for task in targets:
         # 0. 截止闸门（用户规则）：截止日 23:50:59（北京时间）后不再对平台做任何写入
@@ -711,7 +872,7 @@ def run(input_data=None, config=None):
                                       "status": task["status"], "reason": "past_deadline"})
             continue
         # 4. 匹配
-        slug, how, why = match_task_to_skill(task, cfg["aliases"], slugs)
+        slug, how, why = match_task_to_skill(task, cfg["aliases"], slugs, source_map)
         if not slug:
             report["unmatched"].append({"task_number": task["task_number"],
                                         "title": task["title"], "reason": why})
@@ -745,6 +906,8 @@ def run(input_data=None, config=None):
             except (CliError, Blocked) as e:
                 errors.append(f"{task['task_number']}: 执行失败 {e}")
                 item["action"] = "failed"
+    if not cfg["dry_run"] and slugs:
+        release_claim(cfg)
     return report
 
 

@@ -18,3 +18,7 @@ public/community/*
 public/skills_demo/*
 public/dist/*
 /output/
+
+# 并行会话工作认领锁（panda-upload-task / publisher 运行期本地文件）
+.work-claim
+.work-claim.tmp

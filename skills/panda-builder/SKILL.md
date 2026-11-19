@@ -237,6 +237,23 @@ python3 scripts/build.py
 
 **缺失上述任一适配器**，社区审核会记 `warn:runtime-adapter`，不得进入 registry / 组织首页索引。
 
+### 7.1 版本单源与结构校验脚本（验收必跑）
+
+```bash
+# 工作树模式（src 验收）
+python3 skills/panda-builder/scripts/validate_skill.py src/skills/skill-{slug}
+# git 形态模式（发布工作区，按 HEAD blob 校验）
+python3 skills/panda-builder/scripts/validate_skill.py public/skills/skill-{slug} --ref HEAD
+```
+
+校验项：八件套 + 三适配器、name 三处一致、**版本单源**（skill.json 为准，
+CHANGELOG 当前条目 / agents/openai.yaml 不得漂移）、LICENSE GPL-3.0 全文、
+license=GPL-3.0-only、免责声明。**任何 FAIL 即 panda-builder §10 不合格情况，禁止发布。**
+
+**CHANGELOG 条目约定（版本单源的前提）**：第一个**带方括号**条目必须是当前版本号；
+未发布改动使用无方括号的 `## Unreleased`。历史遗留的 `## [Unreleased]` 带括号写法会劫持
+当前条目判定，须在下次发布时一并规范化（如 jev / constraint-stress-test 的 HEAD 现状）。
+
 ---
 
 ## 8. 社区审核规则（收录 / 公开前置条件）

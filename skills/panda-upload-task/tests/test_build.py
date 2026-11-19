@@ -410,3 +410,72 @@ def test_cli_error_envelope_raises():
         return json.dumps({"ok": False, "error": {"code": "not_found", "message": "gone"}})
     with pytest.raises(build.CliError, match="not_found"):
         build.cli({"session": "s", "runner": runner}, "state")
+
+
+# ---------------------------------------------------------------- 新机制：认领锁 / source_task / 版本漂移 / API 通道
+
+def test_claim_blocks_when_held_by_other(tmp_path):
+    _make_skill_dirs(tmp_path)
+    (tmp_path / ".work-claim").write_text(json.dumps(
+        {"who": "other-agent", "activity": "publish",
+         "at": __import__("datetime").datetime.now().isoformat()}))
+    with pytest.raises(build.UploadTaskError, match="占用"):
+        build.run({"tasks": []},
+                  config=_cfg(tmp_path, dry_run=False, runner=lambda *a, **k: "{}"))
+
+
+def test_claim_acquires_and_releases(tmp_path):
+    _make_skill_dirs(tmp_path)
+    rep = build.run({"tasks": []}, config=_cfg(tmp_path, dry_run=False,
+                                               runner=lambda *a, **k: "{}"))
+    assert rep.get("claim") == "panda-upload"
+    assert not (tmp_path / ".work-claim").exists()
+
+
+def test_source_task_level_match(tmp_path):
+    _make_skill_dirs(tmp_path)
+
+    def runner(argv, cwd=None, env=None, timeout=60):
+        s = " ".join(argv)
+        if "show" in s and "skill.json" in s:
+            slug = argv[argv.index("-C") + 1].rstrip("/").split("/")[-1]
+            if slug == "skill-jev-history-replay":
+                return json.dumps({"source_task": "jobs/TS202610193FE946 JEV历史回放.txt"})
+            return json.dumps({"version": "0.2.0"})
+        raise AssertionError(argv)
+
+    tasks = [{"id": "1", "task_number": "TS202610193FE946", "title": "一个没有任何关键词的新表述",
+              "status": "IN_PROGRESS", "ends_at": None}]
+    rep = build.run({"tasks": tasks, "skills": _skills_fixture()},
+                    config=_cfg(tmp_path, runner=runner))
+    assert rep["targets"][0]["match_how"] == "source_task"
+    assert rep["targets"][0]["skill"] == "skill-jev-history-replay"
+
+
+def test_version_drift_detects_stale_docs():
+    def mk(chlog_v, yaml_v):
+        def runner(argv, cwd=None, env=None, timeout=60):
+            s = " ".join(argv)
+            if "CHANGELOG" in s:
+                return "x\n## [%s] - 2026-11-18\n" % chlog_v
+            if "openai.yaml" in s:
+                return "info:\n  version: %s\n" % yaml_v
+            raise AssertionError(argv)
+        return runner
+    drift = build.version_drift({"runner": mk("0.1.0", "0.1.0")}, "/pub", "HEAD", "0.2.0")
+    assert len(drift) == 2
+    assert build.version_drift({"runner": mk("0.2.0", "0.2.0")}, "/pub", "HEAD", "0.2.0") == []
+
+
+def test_api_channel_falls_back_to_ui():
+    res = _skills_fixture()["skill-jev-history-replay"]
+    state = {"items": [], "detail_status": "IN_PROGRESS",
+             "refs": {"textarea": "9", "url": "10", "file": "11"},
+             "clicks": [], "uploaded": None, "feature_text": res["feature"]}
+    cfg = _live_cfg(state)
+    cfg["write_channel"] = "api"
+    out = build.execute_upload(cfg, {"id": "1", "task_number": "T", "title": "x",
+                                     "status": "IN_PROGRESS"}, res)
+    assert out["action"] == "draft_saved"
+    assert "api_attachment_gap" in out["fallback_reason"]
+    assert state["uploaded"] == res["zip_path"]      # UI 兜底完成了附件上传
