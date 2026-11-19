@@ -1,0 +1,9 @@
+{
+  "name": "panda-publisher",
+  "description": "当需要把 src/skills 下已过验收的 skill 发布为 quantskills 独立仓库并产出分发 zip 时，使用此 skill。先经 panda-builder 验收，再同步 public 同名工作区、远端存在则 push 不存在则创建，最后用 git archive 生成与克隆结果一致的 zip。",
+  "version": "1.0.0",
+  "tags": ["quant", "publish", "release", "git", "zip"],
+  "trigger": "任务测试通过后发布 skill 为独立仓库、或需要生成供其它 agent 安装的 zip 包时",
+  "skill_file": "SKILL.md",
+  "requires": ["panda-builder"]
+}

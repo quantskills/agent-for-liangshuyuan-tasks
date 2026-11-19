@@ -5,6 +5,7 @@ __pycache__/
 
 .idea/
 */.idea
+.claude/
 .claude/settings.local.json
 .claude/skills/
 public/.claude/
@@ -15,4 +16,5 @@ src/skills/*
 public/skills/*
 public/community/*
 public/skills_demo/*
-public/dist/
+public/dist/*
+/output/

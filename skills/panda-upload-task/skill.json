@@ -1,0 +1,13 @@
+{
+  "name": "panda-upload-task",
+  "description": "当需要把量枢院任务平台中创作中/待创作任务与已发布 skill 对齐，并将功能说明、分发 zip、GitHub 地址回填到成果表单时，使用此 skill。基于 opencli browser 驱动真实页面，默认只保存草稿，提交审核需显式确认。",
+  "version": "0.1.0",
+  "tags": ["quant", "upload", "task", "opencli", "lsy"],
+  "trigger": "任务发布完成后需要回填量枢院任务成果表单，或巡检创作中/待创作任务与 skill 的对应关系时",
+  "skill_file": "SKILL.md",
+  "entry_script": "scripts/build.py",
+  "runtime": "python>=3.9",
+  "license": "GPL-3.0-only",
+  "data_source": "量枢院成员运营平台 /api/v1（浏览器会话同源 fetch）+ 项目 public/skills 已发布产物",
+  "requires": ["panda-publisher", "opencli-browser", "opencli-usage"]
+}
