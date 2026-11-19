@@ -21,6 +21,7 @@ tags: [developer, build, panda-builder, panda-trading]
 | `skills/panda-builder/SKILL.md` | 全文 | 命名规则、目录结构、代码接口、验收清单（权威规范） |
 | `docs/BUILD开发规则V2.md` | 全文 | 标准交付结构、必须文件、验收标准 |
 | `CLAUDE.md` | §「项目目录规则」 | target_dir 路径格式与 `skill-{slug}` 命名 |
+| `CLAUDE.md` | §「版本控制归属」 | `src/skills/skill-{slug}/.git` 是无远端的本地快照仓库，与 `public/` 的发布仓库两套历史互不相干；开发期用 worktree 分支，发布判断只看 `$PUB` |
 | `CLAUDE.md` | §「架构约定」 | build.py 的四层结构（配置/判断/决策/批量/输出） |
 | `CLAUDE.md` | §「仓位管理类 BUILD 输出结构」 | 输出 dict 的标准字段定义（不得自行增减字段） |
 | `CLAUDE.md` | §「A股交易约束」 | 数量取整规则（100股整数倍）、收盘强平时间（14:45） |

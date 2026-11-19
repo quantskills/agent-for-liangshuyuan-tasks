@@ -30,11 +30,15 @@ done
 
 > 注意：只判断“目录是否存在”会永久残留旧副本。必须同时比较内容，`skills/` 更新后 `.claude/skills/` 才会同步。
 
+> 另注：本项目的 `.claude/skills` 已是指向 `../skills` 的**符号链接**，上述循环对它会全部报 `OK`（内容天然一致），并不代表发生了复制；此时若要确保规则最新，直接读 `skills/` 原件即可。在其他项目里若 `.claude/skills/` 是实体目录，才需要上面的复制逻辑。
+
 本项目下所有的任务开发以 `skills/` 目录下当前包含的 skill：
 
 | Skill | 用途 |
 |---|---|
 | `panda-builder` | 创建或验收新 BUILD skill 时使用，确保目录结构、代码接口、文档合规 |
+| `panda-publisher` | 发布已过验收的 skill 时使用：先经 `panda-builder` 验收，再同步 `public/` 同名工作区、远端存在则 push 不存在则创建，并生成 `public/dist/` 下的分发 zip |
+| `panda-upload-task` | 把量枢院任务平台（lsy.quant789.com/app）中「创作中/待创作」任务与已发布 skill 对齐，用 opencli 驱动成果表单回填（功能说明 / zip / GitHub 地址），默认保存草稿，提交审核需用户明确确认 |
 
 ---
 
@@ -55,11 +59,24 @@ done
 |---|---|---|
 | `src/skills/` | BUILD 类工具（数据处理、仓位管理、监控预警等） | `src/skills/skill-{slug}/` |
 | `src/skills/` | Alpha 信号与因子 | `src/skills/skill-{slug}/` |
-| `public/skills/` | 通过测试后发布的独立 skill 仓库（git submodule / clone 工作区） | `public/skills/skill-{slug}/` |
+| `public/skills/` | 已发布 skill 的 clone 工作区：每个目录各自对应 `quantskills/skill-{slug}` 远端仓库（**不是 submodule**，父仓库不跟踪） | `public/skills/skill-{slug}/` |
 
 - `{slug}`：中文任务名转英文，小写 + 连字符，3–6 词（如 `intraday-position-manager`）。
 - 目录名格式为 `skill-{slug}`，**不带** `build-`、`alpha-` 或任务编号前缀。
 - BUILD 与 Alpha 同处 `src/skills/`，用 `skill.json` 的 `type` 字段区分（`"build"` / `"alpha"`）；任务编号只记录在 `skill.json` 的 `source_task` 字段用于溯源。
+
+### 版本控制归属（三套 git，互不相干）
+
+| 仓库 | 位置 | 远端 | 用途与边界 |
+|---|---|---|---|
+| 父仓库 | 项目根 | `quantskills/agent-for-liangshuyuan-tasks` | 只管工程文件（`jobs/`、`docs/`、`agents/`、`skills/`、`CLAUDE.md`）。`.gitignore` 已排除 `src/skills/*` 与 `public/skills/*`，**skill 产物不进父仓库** |
+| 开发快照仓库 | `src/skills/skill-{slug}/.git`（按需 `git init`，可以没有） | **无** | 只做本地留痕与 `git worktree` 分支开发；历史与发布无关，**禁止**用它的分支/提交判断发布状态 |
+| 发布仓库 | `public/skills/skill-{slug}/.git` | `quantskills/skill-{slug}` | 唯一与公网有关的 git；HEAD、tag、dirty、`origin/main` 只在这里核对 |
+
+- 三者**不共享历史**：`src → public` 只靠 `panda-publisher` 的 `rsync` + 在 `$PUB` 里重新提交传递，**不靠** git remote / push / pull / submodule 关系。
+- 在 `src/skills/skill-{slug}/` 里直接跑 git，命中的是该 skill 的本地快照仓库（若存在），**不是**父仓库；要查父仓库状态必须显式 `git -C <项目根>`。
+- `$SRC` 里若存在 `.git`，`rsync` 的 `--exclude='.git/'` 会把它挡在发布包外，快照历史不会随包发布。
+- 严禁在这几套仓库之间做反向 git 搬运（`public → src` 的 fetch / pull / cherry-pick / checkout），代码流向只有一个方向。
 
 ---
 

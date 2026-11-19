@@ -58,7 +58,8 @@ tags: [publish, quantskills, skill]
 | 元素 | 规则 | 示例 |
 |---|---|---|
 | GitHub 仓库名 | `skill-{slug}` | `skill-intraday-position-manager` |
-| 本地工作区 | `public/skills/skill-{slug}/` | 仅 clone 工作区 |
+| 本地工作区 | `public/skills/skill-{slug}/` | 仅 clone 工作区；这里是**唯一**挂着 skill 远端的 git |
+| 开发工作区 | `src/skills/skill-{slug}/` | 真相源；其 `.git`（若有）是无远端的本地快照，与发布无关 |
 
 - **任务编号不进仓库名**：不是 `skill-b12-intraday-position-manager`，也不是 `intraday-position-manager`。
 - `slug` 由 TaskSpec 提供，小写 + 连字符，3–6 词。
@@ -200,7 +201,10 @@ git push -u origin main
 
 ### 动作六：回到父仓库根目录
 
-发布完成。父仓库零变更（`public/skills/*` 在 `.gitignore` 中）。
+发布完成。父仓库零变更（`public/skills/*` 与 `src/skills/*` 都在 `.gitignore` 中）。
+
+`src/skills/skill-{slug}/` 里若存在 `.git`，那是**开发者自己的纯本地快照仓库**（无远端，只服务于 worktree 开发留痕），
+与本步的发布仓库 `public/skills/skill-{slug}/` 是两套历史；发布状态只看后者的 `origin/main` 与 tag。
 
 ---
 
