@@ -92,9 +92,10 @@ def check_skill(path, ref=None):
     if my and version and my.group(1) != version:
         fails.append(f"openai.yaml version={my.group(1)} vs skill.json {version} 漂移")
 
-    lic = read("LICENSE") or ""
-    if lic and not lic.startswith("GNU GENERAL PUBLIC LICENSE"):
-        fails.append("LICENSE 不是 GPL-3.0 全文")
+    lic_raw = read("LICENSE") or ""
+    lic = lic_raw.lstrip()
+    if lic_raw and not lic.startswith("GNU GENERAL PUBLIC LICENSE"):
+        fails.append(f"LICENSE 首个非空行不是「GNU GENERAL PUBLIC LICENSE」（实际: {lic.splitlines()[0][:40] if lic else ''}）")
 
     rm = read("README.md") or ""
     if rm and "## ⚠️ 免责声明" not in rm:
