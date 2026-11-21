@@ -39,6 +39,8 @@ done
 | `panda-builder` | 创建或验收新 BUILD skill 时使用，确保目录结构、代码接口、文档合规 |
 | `panda-publisher` | 发布已过验收的 skill 时使用：先经 `panda-builder` 验收，再同步 `public/` 同名工作区、远端存在则 push 不存在则创建，并生成 `public/dist/` 下的分发 zip |
 | `panda-upload-task` | 把量枢院任务平台（lsy.quant789.com/app）中「创作中/待创作」任务与已发布 skill 对齐，用 opencli 驱动成果表单回填（功能说明 / zip / GitHub 地址），默认保存草稿，提交审核需用户明确确认 |
+| `opencli-usage` / `opencli-browser` / `opencli-adapter-author` / `opencli-autofix` / `opencli-browser-sitemap` / `opencli-sitemap-author` | OpenCLI 浏览器驱动与站点适配器开发工具链；`panda-upload-task` 依赖其中的 browser 能力 |
+| `superpowers` | 通用工程技能路由表（brainstorming / TDD / systematic-debugging / code review 等 14 项），新建或修改 skill 本身前先查表 |
 
 ---
 
@@ -50,6 +52,8 @@ done
 - 任务文件名以 `B{编号} {名称}.txt` 命名的为 Build 类任务，必须由主 Agent 路由指派至 **Build 开发 Agent** 配合 `panda-builder` 进行开发。
 
 任务编号（如 `B12`、`A00`）**只用于任务路由和溯源**，不进入任何 skill 名称、目录名或产物数据字段。
+
+> **`jobs/` 仅本地保留**：任务文件含平台评分口径与内部评测反馈，已被 `.gitignore` 排除。任何 Agent 都不得 `git add jobs/`、不得把任务文件内容写进可发布的 skill 文档，也不得在发布产物中出现任务原文。
 
 ## 项目目录规则
 

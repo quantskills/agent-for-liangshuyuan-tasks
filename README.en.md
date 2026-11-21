@@ -33,6 +33,18 @@ This is an **Agent-type repository** (`agent-for-liangshuyuan-tasks`), compliant
 
 ## 🏗️ Architecture
 
+### Skill Toolchain
+
+`skills/` holds **this project's own development toolchain** (distinct from the trading skills under `src/skills/` that get published):
+
+| Skill | Purpose |
+|---|---|
+| `panda-builder` | Create / accept BUILD skills; enforces layout, code API, and doc consistency |
+| `panda-publisher` | Publish accepted skills: sync `public/`, push remote repo, generate distribution zip |
+| `panda-upload-task` | Align tasks on the 量枢院 task platform with published skills and fill result forms |
+| `opencli-usage` / `opencli-browser` / `opencli-adapter-author` / `opencli-autofix` / `opencli-browser-sitemap` / `opencli-sitemap-author` | Full toolchain for OpenCLI browser driving and adapter authoring |
+| `superpowers` | Router for general engineering skills (brainstorming, TDD, systematic debugging, code review, …) |
+
 ### Task Classification
 
 | Prefix | Type | Directory | Description |
@@ -45,6 +57,8 @@ Task IDs (e.g. `B12`, `A00`) are used only for routing and traceability — they
 ### Multi-Agent Collaboration
 
 Put task requirements into `jobs/*.txt`, and the Agent system handles the full pipeline:
+
+> **`jobs/` is local-only**: raw task requirements contain platform scoring rules and internal review feedback, so they are excluded via `.gitignore` — **never committed, never pushed**. Create the directory yourself after cloning.
 
 ```
 jobs/B{id} {name}.txt
@@ -103,14 +117,18 @@ panda-trading/
 │   ├── test-agent/SKILL.md
 │   └── publish-agent/SKILL.md
 │
-├── skills/                         ← Local project skills
-│   └── panda-builder/              ← Skill scaffold & acceptance rules
+├── skills/                         ← Project's own dev toolchain (committed)
+│   ├── panda-builder/              ← Skill scaffold & acceptance rules
+│   ├── panda-publisher/            ← Publish: sync public/, push remote, build zip
+│   ├── panda-upload-task/          ← Fill result forms on the task platform
+│   ├── opencli-*/                  ← OpenCLI browser driving & adapter authoring (6)
+│   └── superpowers/                ← General engineering skill router
 │
 ├── docs/                           ← Development rule documents
 │   ├── BUILD开发规则V2.md
 │   └── Alpha因子开发规则V2.md
 │
-├── jobs/                           ← Raw task requirements
+├── jobs/                           ← Raw task requirements (gitignored, local-only)
 │
 ├── public/                         ← Publish workspace (gitignored, not committed)
 │   └── skills/

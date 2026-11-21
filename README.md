@@ -35,10 +35,15 @@
 
 ### Skill 体系
 
-```
-skills/
-└── panda-builder/          ← 脚手架 Skill：创建/验收 skill 的统一规范
-```
+`skills/` 存放的是**本项目自身的开发工具链**（与 `src/skills/` 下待发布的交易 skill 是两回事）：
+
+| Skill | 用途 |
+|---|---|
+| `panda-builder` | 创建 / 验收 BUILD skill，确保目录结构、代码接口、文档合规 |
+| `panda-publisher` | 发布已过验收的 skill：同步 `public/` 工作区、推送远端仓库、生成分发 zip |
+| `panda-upload-task` | 把量枢院任务平台上「创作中/待创作」任务与已发布 skill 对齐并回填成果表单 |
+| `opencli-usage` / `opencli-browser` / `opencli-adapter-author` / `opencli-autofix` / `opencli-browser-sitemap` / `opencli-sitemap-author` | OpenCLI 浏览器驱动与适配器开发的完整工具链 |
+| `superpowers` | 通用工程技能路由表（需求梳理、TDD、系统化调试、代码评审等 14 项） |
 
 ### 任务分类
 
@@ -52,6 +57,8 @@ skills/
 ### 多 Agent 协作 —— 从任务到发布全自动
 
 把任务需求写成 `.txt` 放入 `jobs/` 目录，Agent 系统会自动完成**分析 → 路由 → 开发 → 测试 → 发布**全流程。文件名前缀决定路由规则：
+
+> **`jobs/` 仅本地保留**：原始任务需求含平台评分口径与内部评测反馈，已在 `.gitignore` 中排除 —— **不入库、不推线上**。克隆本仓库后需自行创建 `jobs/` 目录并放入任务文件。
 
 ```
 jobs/B{编号} {名称}.txt          ← 用户只需写这个
@@ -110,23 +117,25 @@ panda-trading/
 │   ├── test-agent/SKILL.md         ←   测试 Agent 规则
 │   └── publish-agent/SKILL.md      ←   发布 Agent 规则（遵循 QuantSkills 社区规则）
 │
-├── skills/                         ← 项目本地 Skill
-│   └── panda-builder/              ←   skill 脚手架与验收规范
-│       ├── SKILL.md
-│       └── skill.json
+├── skills/                         ← 项目自身开发工具链（入库）
+│   ├── panda-builder/              ←   skill 脚手架与验收规范
+│   ├── panda-publisher/            ←   发布：同步 public/、推远端、出 zip
+│   ├── panda-upload-task/          ←   任务平台成果表单回填
+│   ├── opencli-*/                  ←   OpenCLI 浏览器驱动与适配器开发（6 个）
+│   └── superpowers/                ←   通用工程技能路由表
 │
 ├── docs/                           ← 开发规则文档
 │   ├── BUILD开发规则V2.md           ←   BUILD 工具开发全流程规范
 │   └── Alpha因子开发规则V2.md       ←   Alpha 因子开发规范
 │
-├── jobs/                           ← 原始任务需求
+├── jobs/                           ← 原始任务需求（.gitignore 排除，仅本地保留）
 │
 ├── public/                         ← 发布工作区（.gitignore 排除，不入库）
 │   └── skills/
 │       └── skill-dl-gnn-stock-graph/   ← 已过审 skill 参考实现
 │
 └── src/
-    └── skills/                     ← 开发产物（所有产出必须放此处）
+    └── skills/                     ← 开发产物（.gitignore 排除；所有产出必须放此处）
         └── skill-{slug}/           ←   每个任务一个自包含 skill 目录
 ```
 

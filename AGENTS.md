@@ -28,7 +28,7 @@ metadata:
 ## 项目定位
 
 - **类型**：Agent 协作框架（Agent Orchestration Framework）
-- **解决问题**：将量化交易工具的开发流程标准化——用户只需写需求文件（`jobs/*.txt`），Agent 系统自动完成需求分析 → 路由派发 → 编码开发 → 测试验证 → 独立仓库发布的全流程
+- **解决问题**：将量化交易工具的开发流程标准化——用户只需写需求文件（`jobs/*.txt`，仅本地保留不入库），Agent 系统自动完成需求分析 → 路由派发 → 编码开发 → 测试验证 → 独立仓库发布的全流程
 - **适用对象**：量化交易开发者、Claude Code 用户、QuantSkills 社区贡献者
 
 ## 维护者
@@ -137,16 +137,20 @@ panda-trading/
 │   ├── test-agent/SKILL.md         ←   测试 Agent 规则
 │   └── publish-agent/SKILL.md      ←   发布 Agent 规则（遵循 QuantSkills 社区规则）
 │
-├── skills/                         ← 项目本地 Skill
-│   └── panda-builder/              ←   BUILD 脚手架与验收规范
+├── skills/                         ← 项目自身开发工具链（入库）
+│   ├── panda-builder/              ←   BUILD 脚手架与验收规范
+│   ├── panda-publisher/            ←   发布：同步 public/、推远端、出 zip
+│   ├── panda-upload-task/          ←   任务平台成果表单回填
+│   ├── opencli-*/                  ←   OpenCLI 浏览器驱动与适配器开发（6 个）
+│   └── superpowers/                ←   通用工程技能路由表
 │
 ├── docs/                           ← 开发规则文档
 │   ├── BUILD开发规则V2.md
 │   └── Alpha因子开发规则V2.md
 │
-├── jobs/                           ← 原始任务需求
+├── jobs/                           ← 原始任务需求（gitignored，仅本地保留）
 │
-├── src/                            ← 开发工作区（所有产出必须放此处）
+├── src/                            ← 开发工作区（gitignored；所有产出必须放此处）
 │   └── skills/                     ←   每个任务一个 skill-{slug} 目录
 │
 └── public/                         ← 发布工作区（gitignored，不入库）
