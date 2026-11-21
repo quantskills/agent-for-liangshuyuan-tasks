@@ -22,3 +22,6 @@ public/dist/*
 # 并行会话工作认领锁（panda-upload-task / publisher 运行期本地文件）
 .work-claim
 .work-claim.tmp
+
+# 原始任务需求：含平台评分口径与内部评测反馈，仅本地保留，不进仓库/不推线上
+jobs/

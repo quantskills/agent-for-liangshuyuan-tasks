@@ -69,7 +69,7 @@ done
 
 | 仓库 | 位置 | 远端 | 用途与边界 |
 |---|---|---|---|
-| 父仓库 | 项目根 | `quantskills/agent-for-liangshuyuan-tasks` | 只管工程文件（`jobs/`、`docs/`、`agents/`、`skills/`、`CLAUDE.md`）。`.gitignore` 已排除 `src/skills/*` 与 `public/skills/*`，**skill 产物不进父仓库** |
+| 父仓库 | 项目根 | `quantskills/agent-for-liangshuyuan-tasks` | 只管工程文件（`docs/`、`agents/`、`skills/`、`CLAUDE.md`）。`.gitignore` 已排除 `src/skills/*`、`public/skills/*` 与 `jobs/`，**skill 产物与原始任务需求都不进父仓库/不推线上** |
 | 开发快照仓库 | `src/skills/skill-{slug}/.git`（按需 `git init`，可以没有） | **无** | 只做本地留痕与 `git worktree` 分支开发；历史与发布无关，**禁止**用它的分支/提交判断发布状态 |
 | 发布仓库 | `public/skills/skill-{slug}/.git` | `quantskills/skill-{slug}` | 唯一与公网有关的 git；HEAD、tag、dirty、`origin/main` 只在这里核对 |
 
